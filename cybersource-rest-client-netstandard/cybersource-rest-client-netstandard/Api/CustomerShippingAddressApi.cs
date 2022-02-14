@@ -15,6 +15,8 @@ using System.Linq;
 using RestSharp;
 using CyberSource.Client;
 using CyberSource.Model;
+using NLog;
+using AuthenticationSdk.util;
 
 namespace CyberSource.Api
 {
@@ -296,22 +298,28 @@ namespace CyberSource.Api
     /// </summary>
     public partial class CustomerShippingAddressApi : ICustomerShippingAddressApi
     {
-        private CyberSource.Client.ExceptionFactory _exceptionFactory = (name, response) => null;
+        private static Logger logger;
+        private ExceptionFactory _exceptionFactory = (name, response) => null;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CustomerShippingAddressApi"/> class.
         /// </summary>
         /// <returns></returns>
-        public CustomerShippingAddressApi(String basePath)
+        public CustomerShippingAddressApi(string basePath)
         {
-            this.Configuration = new Configuration(new ApiClient(basePath));
+            Configuration = new Configuration(new ApiClient(basePath));
 
-            ExceptionFactory = CyberSource.Client.Configuration.DefaultExceptionFactory;
+            ExceptionFactory = Configuration.DefaultExceptionFactory;
 
             // ensure API client has configuration ready
             if (Configuration.ApiClient.Configuration == null)
             {
-                this.Configuration.ApiClient.Configuration = this.Configuration;
+                Configuration.ApiClient.Configuration = Configuration;
+            }
+
+            if (logger == null)
+            {
+                logger = LogManager.GetCurrentClassLogger();
             }
         }
 
@@ -324,22 +332,27 @@ namespace CyberSource.Api
         public CustomerShippingAddressApi(Configuration configuration = null)
         {
             if (configuration == null) // use the default one in Configuration
-                this.Configuration = Configuration.Default;
+                Configuration = Configuration.Default;
             else
-                this.Configuration = configuration;
+                Configuration = configuration;
 
-            ExceptionFactory = CyberSource.Client.Configuration.DefaultExceptionFactory;
+            ExceptionFactory = Configuration.DefaultExceptionFactory;
 
-            this.Configuration.ApiClient.Configuration = this.Configuration;
+            Configuration.ApiClient.Configuration = Configuration;
+
+            if (logger == null)
+            {
+                logger = LogManager.GetCurrentClassLogger();
+            }
         }
 
         /// <summary>
         /// Gets the base path of the API client.
         /// </summary>
         /// <value>The base path</value>
-        public String GetBasePath()
+        public string GetBasePath()
         {
-            return this.Configuration.ApiClient.RestClient.BaseUrl.ToString();
+            return Configuration.ApiClient.RestClient.BaseUrl.ToString();
         }
 
         /// <summary>
@@ -347,7 +360,7 @@ namespace CyberSource.Api
         /// </summary>
         /// <value>The base path</value>
         [Obsolete("SetBasePath is deprecated, please do 'Configuration.ApiClient = new ApiClient(\"http://new-path\")' instead.")]
-        public void SetBasePath(String basePath)
+        public void SetBasePath(string basePath)
         {
             // do nothing
         }
@@ -356,17 +369,18 @@ namespace CyberSource.Api
         /// Gets or sets the configuration object
         /// </summary>
         /// <value>An instance of the Configuration</value>
-        public Configuration Configuration {get; set;}
+        public Configuration Configuration { get; set; }
 
         /// <summary>
         /// Provides a factory method hook for the creation of exceptions.
         /// </summary>
-        public CyberSource.Client.ExceptionFactory ExceptionFactory
+        public ExceptionFactory ExceptionFactory
         {
             get
             {
                 if (_exceptionFactory != null && _exceptionFactory.GetInvocationList().Length > 1)
                 {
+                    logger.Error("InvalidOperationException : Multicast delegate for ExceptionFactory is unsupported.");
                     throw new InvalidOperationException("Multicast delegate for ExceptionFactory is unsupported.");
                 }
                 return _exceptionFactory;
@@ -379,9 +393,9 @@ namespace CyberSource.Api
         /// </summary>
         /// <returns>Dictionary of HTTP header</returns>
         [Obsolete("DefaultHeader is deprecated, please use Configuration.DefaultHeader instead.")]
-        public Dictionary<String, String> DefaultHeader()
+        public Dictionary<string, string> DefaultHeader()
         {
-            return this.Configuration.DefaultHeader;
+            return Configuration.DefaultHeader;
         }
 
         /// <summary>
@@ -393,7 +407,7 @@ namespace CyberSource.Api
         [Obsolete("AddDefaultHeader is deprecated, please use Configuration.AddDefaultHeader instead.")]
         public void AddDefaultHeader(string key, string value)
         {
-            this.Configuration.AddDefaultHeader(key, value);
+            Configuration.AddDefaultHeader(key, value);
         }
 
         /// <summary>
@@ -406,7 +420,8 @@ namespace CyberSource.Api
         /// <returns></returns>
         public void DeleteCustomerShippingAddress (string customerTokenId, string shippingAddressTokenId, string profileId = null)
         {
-             DeleteCustomerShippingAddressWithHttpInfo(customerTokenId, shippingAddressTokenId, profileId);
+            logger.Debug("CALLING API \"DeleteCustomerShippingAddress\" STARTED");
+            DeleteCustomerShippingAddressWithHttpInfo(customerTokenId, shippingAddressTokenId, profileId);
         }
 
         /// <summary>
@@ -419,38 +434,59 @@ namespace CyberSource.Api
         /// <returns>ApiResponse of Object(void)</returns>
         public ApiResponse<Object> DeleteCustomerShippingAddressWithHttpInfo (string customerTokenId, string shippingAddressTokenId, string profileId = null)
         {
+            LogUtility logUtility = new LogUtility();
+
             // verify the required parameter 'customerTokenId' is set
             if (customerTokenId == null)
+            {
+                logger.Error("ApiException : Missing required parameter 'customerTokenId' when calling CustomerShippingAddressApi->DeleteCustomerShippingAddress");
                 throw new ApiException(400, "Missing required parameter 'customerTokenId' when calling CustomerShippingAddressApi->DeleteCustomerShippingAddress");
+            }
             // verify the required parameter 'shippingAddressTokenId' is set
             if (shippingAddressTokenId == null)
+            {
+                logger.Error("ApiException : Missing required parameter 'shippingAddressTokenId' when calling CustomerShippingAddressApi->DeleteCustomerShippingAddress");
                 throw new ApiException(400, "Missing required parameter 'shippingAddressTokenId' when calling CustomerShippingAddressApi->DeleteCustomerShippingAddress");
+            }
 
             var localVarPath = $"/tms/v2/customers/{customerTokenId}/shipping-addresses/{shippingAddressTokenId}";
-            var localVarPathParams = new Dictionary<String, String>();
-            var localVarQueryParams = new Dictionary<String, String>();
-            var localVarHeaderParams = new Dictionary<String, String>(Configuration.DefaultHeader);
-            var localVarFormParams = new Dictionary<String, String>();
-            var localVarFileParams = new Dictionary<String, FileParameter>();
-            Object localVarPostBody = null;
+            var localVarPathParams = new Dictionary<string, string>();
+            var localVarQueryParams = new Dictionary<string, string>();
+            var localVarHeaderParams = new Dictionary<string, string>(Configuration.DefaultHeader);
+            var localVarFormParams = new Dictionary<string, string>();
+            var localVarFileParams = new Dictionary<string, FileParameter>();
+            object localVarPostBody = null;
 
             // to determine the Content-Type header
-            String[] localVarHttpContentTypes = new String[] {
+            string[] localVarHttpContentTypes = new string[] {
                 "application/json;charset=utf-8"
             };
-            String localVarHttpContentType = Configuration.ApiClient.SelectHeaderContentType(localVarHttpContentTypes);
+            string localVarHttpContentType = Configuration.ApiClient.SelectHeaderContentType(localVarHttpContentTypes);
 
             // to determine the Accept header
-            String[] localVarHttpHeaderAccepts = new String[] {
+            string[] localVarHttpHeaderAccepts = new string[] {
                 "application/json;charset=utf-8"
             };
-            String localVarHttpHeaderAccept = Configuration.ApiClient.SelectHeaderAccept(localVarHttpHeaderAccepts);
+            string localVarHttpHeaderAccept = Configuration.ApiClient.SelectHeaderAccept(localVarHttpHeaderAccepts);
             if (localVarHttpHeaderAccept != null)
+            {
                 localVarHeaderParams.Add("Accept", localVarHttpHeaderAccept);
+            }
 
-            if (customerTokenId != null) localVarPathParams.Add("customerTokenId", Configuration.ApiClient.ParameterToString(customerTokenId)); // path parameter
-            if (shippingAddressTokenId != null) localVarPathParams.Add("shippingAddressTokenId", Configuration.ApiClient.ParameterToString(shippingAddressTokenId)); // path parameter
-            if (profileId != null) localVarHeaderParams.Add("profile-id", Configuration.ApiClient.ParameterToString(profileId)); // header parameter
+            if (customerTokenId != null)
+            {
+                localVarPathParams.Add("customerTokenId", Configuration.ApiClient.ParameterToString(customerTokenId)); // path parameter
+            }
+            if (shippingAddressTokenId != null)
+            {
+                localVarPathParams.Add("shippingAddressTokenId", Configuration.ApiClient.ParameterToString(shippingAddressTokenId)); // path parameter
+            }
+            logger.Debug($"HTTP Request Body :\n{logUtility.ConvertDictionaryToString(localVarPathParams)}");
+            logger.Debug($"HTTP Request Body :\n{logUtility.ConvertDictionaryToString(localVarPathParams)}");
+            if (profileId != null)
+            {
+                localVarHeaderParams.Add("profile-id", Configuration.ApiClient.ParameterToString(profileId)); // header parameter
+            }
 
 
             // make the HTTP request
@@ -463,12 +499,16 @@ namespace CyberSource.Api
             if (ExceptionFactory != null)
             {
                 Exception exception = ExceptionFactory("DeleteCustomerShippingAddress", localVarResponse);
-                if (exception != null) throw exception;
+                if (exception != null)
+                {
+                    logger.Error($"Exception : {exception.Message}");
+                    throw exception;
+                }
             }
 
-            return new ApiResponse<Object>(localVarStatusCode,
+            return new ApiResponse<object>(localVarStatusCode,
                 localVarResponse.Headers.ToDictionary(x => x.Name, x => x.Value.ToString()),
-                null); // Return statement
+                localVarResponse.Content); // Return statement
         }
 
         /// <summary>
@@ -481,7 +521,8 @@ namespace CyberSource.Api
         /// <returns>Task of void</returns>
         public async System.Threading.Tasks.Task DeleteCustomerShippingAddressAsync (string customerTokenId, string shippingAddressTokenId, string profileId = null)
         {
-             await DeleteCustomerShippingAddressAsyncWithHttpInfo(customerTokenId, shippingAddressTokenId, profileId);
+            logger.Debug("CALLING API \"DeleteCustomerShippingAddressAsync\" STARTED");
+            await DeleteCustomerShippingAddressAsyncWithHttpInfo(customerTokenId, shippingAddressTokenId, profileId);
 
         }
 
@@ -495,58 +536,82 @@ namespace CyberSource.Api
         /// <returns>Task of ApiResponse</returns>
         public async System.Threading.Tasks.Task<ApiResponse<Object>> DeleteCustomerShippingAddressAsyncWithHttpInfo (string customerTokenId, string shippingAddressTokenId, string profileId = null)
         {
+            LogUtility logUtility = new LogUtility();
+
             // verify the required parameter 'customerTokenId' is set
             if (customerTokenId == null)
+            {
+                logger.Error("ApiException : Missing required parameter 'customerTokenId' when calling CustomerShippingAddressApi->DeleteCustomerShippingAddress");
                 throw new ApiException(400, "Missing required parameter 'customerTokenId' when calling CustomerShippingAddressApi->DeleteCustomerShippingAddress");
+            }
             // verify the required parameter 'shippingAddressTokenId' is set
             if (shippingAddressTokenId == null)
+            {
+                logger.Error("ApiException : Missing required parameter 'shippingAddressTokenId' when calling CustomerShippingAddressApi->DeleteCustomerShippingAddress");
                 throw new ApiException(400, "Missing required parameter 'shippingAddressTokenId' when calling CustomerShippingAddressApi->DeleteCustomerShippingAddress");
+            }
 
             var localVarPath = $"/tms/v2/customers/{customerTokenId}/shipping-addresses/{shippingAddressTokenId}";
-            var localVarPathParams = new Dictionary<String, String>();
-            var localVarQueryParams = new Dictionary<String, String>();
-            var localVarHeaderParams = new Dictionary<String, String>(Configuration.DefaultHeader);
-            var localVarFormParams = new Dictionary<String, String>();
-            var localVarFileParams = new Dictionary<String, FileParameter>();
-            Object localVarPostBody = null;
+            var localVarPathParams = new Dictionary<string, string>();
+            var localVarQueryParams = new Dictionary<string, string>();
+            var localVarHeaderParams = new Dictionary<string, string>(Configuration.DefaultHeader);
+            var localVarFormParams = new Dictionary<string, string>();
+            var localVarFileParams = new Dictionary<string, FileParameter>();
+            object localVarPostBody = null;
 
             // to determine the Content-Type header
-            String[] localVarHttpContentTypes = new String[] {
+            string[] localVarHttpContentTypes = new string[] {
                 "application/json;charset=utf-8"
             };
-            String localVarHttpContentType = Configuration.ApiClient.SelectHeaderContentType(localVarHttpContentTypes);
+            string localVarHttpContentType = Configuration.ApiClient.SelectHeaderContentType(localVarHttpContentTypes);
 
             // to determine the Accept header
-            String[] localVarHttpHeaderAccepts = new String[] {
+            string[] localVarHttpHeaderAccepts = new string[] {
                 "application/json;charset=utf-8"
             };
-            String localVarHttpHeaderAccept = Configuration.ApiClient.SelectHeaderAccept(localVarHttpHeaderAccepts);
+            string localVarHttpHeaderAccept = Configuration.ApiClient.SelectHeaderAccept(localVarHttpHeaderAccepts);
             if (localVarHttpHeaderAccept != null)
+            {
                 localVarHeaderParams.Add("Accept", localVarHttpHeaderAccept);
+            }
 
-            if (customerTokenId != null) localVarPathParams.Add("customerTokenId", Configuration.ApiClient.ParameterToString(customerTokenId)); // path parameter
-            if (shippingAddressTokenId != null) localVarPathParams.Add("shippingAddressTokenId", Configuration.ApiClient.ParameterToString(shippingAddressTokenId)); // path parameter
-            if (profileId != null) localVarHeaderParams.Add("profile-id", Configuration.ApiClient.ParameterToString(profileId)); // header parameter
+            if (customerTokenId != null)
+            {
+                localVarPathParams.Add("customerTokenId", Configuration.ApiClient.ParameterToString(customerTokenId)); // path parameter
+            }
+            if (shippingAddressTokenId != null)
+            {
+                localVarPathParams.Add("shippingAddressTokenId", Configuration.ApiClient.ParameterToString(shippingAddressTokenId)); // path parameter
+            }
+            logger.Debug($"HTTP Request Body :\n{logUtility.ConvertDictionaryToString(localVarPathParams)}");
+            logger.Debug($"HTTP Request Body :\n{logUtility.ConvertDictionaryToString(localVarPathParams)}");
+            if (profileId != null)
+            {
+                localVarHeaderParams.Add("profile-id", Configuration.ApiClient.ParameterToString(profileId)); // header parameter
+            }
 
 
             // make the HTTP request
-            IRestResponse localVarResponse = (IRestResponse) await Configuration.ApiClient.CallApiAsync(localVarPath,
+            IRestResponse localVarResponse = (IRestResponse)await Configuration.ApiClient.CallApiAsync(localVarPath,
                 Method.DELETE, localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarFileParams,
                 localVarPathParams, localVarHttpContentType);
 
-            int localVarStatusCode = (int) localVarResponse.StatusCode;
+            int localVarStatusCode = (int)localVarResponse.StatusCode;
 
             if (ExceptionFactory != null)
             {
                 Exception exception = ExceptionFactory("DeleteCustomerShippingAddress", localVarResponse);
-                if (exception != null) throw exception;
+                if (exception != null)
+                {
+                    logger.Error($"Exception : {exception.Message}");
+                    throw exception;
+                }
             }
 
-            return new ApiResponse<Object>(localVarStatusCode,
+            return new ApiResponse<object>(localVarStatusCode,
                 localVarResponse.Headers.ToDictionary(x => x.Name, x => x.Value.ToString()),
-                null); // Return statement
+                localVarResponse.Content); // Return statement
         }
-
         /// <summary>
         /// Retrieve a Customer Shipping Address 
         /// </summary>
@@ -557,8 +622,10 @@ namespace CyberSource.Api
         /// <returns>Tmsv2customersEmbeddedDefaultShippingAddress</returns>
         public Tmsv2customersEmbeddedDefaultShippingAddress GetCustomerShippingAddress (string customerTokenId, string shippingAddressTokenId, string profileId = null)
         {
-             ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress> localVarResponse = GetCustomerShippingAddressWithHttpInfo(customerTokenId, shippingAddressTokenId, profileId);
-             return localVarResponse.Data;
+            logger.Debug("CALLING API \"GetCustomerShippingAddress\" STARTED");
+            ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress> localVarResponse = GetCustomerShippingAddressWithHttpInfo(customerTokenId, shippingAddressTokenId, profileId);
+            logger.Debug("CALLING API \"GetCustomerShippingAddress\" ENDED");
+            return localVarResponse.Data;
         }
 
         /// <summary>
@@ -571,38 +638,59 @@ namespace CyberSource.Api
         /// <returns>ApiResponse of Tmsv2customersEmbeddedDefaultShippingAddress</returns>
         public ApiResponse< Tmsv2customersEmbeddedDefaultShippingAddress > GetCustomerShippingAddressWithHttpInfo (string customerTokenId, string shippingAddressTokenId, string profileId = null)
         {
+            LogUtility logUtility = new LogUtility();
+
             // verify the required parameter 'customerTokenId' is set
             if (customerTokenId == null)
+            {
+                logger.Error("ApiException : Missing required parameter 'customerTokenId' when calling CustomerShippingAddressApi->GetCustomerShippingAddress");
                 throw new ApiException(400, "Missing required parameter 'customerTokenId' when calling CustomerShippingAddressApi->GetCustomerShippingAddress");
+            }
             // verify the required parameter 'shippingAddressTokenId' is set
             if (shippingAddressTokenId == null)
+            {
+                logger.Error("ApiException : Missing required parameter 'shippingAddressTokenId' when calling CustomerShippingAddressApi->GetCustomerShippingAddress");
                 throw new ApiException(400, "Missing required parameter 'shippingAddressTokenId' when calling CustomerShippingAddressApi->GetCustomerShippingAddress");
+            }
 
             var localVarPath = $"/tms/v2/customers/{customerTokenId}/shipping-addresses/{shippingAddressTokenId}";
-            var localVarPathParams = new Dictionary<String, String>();
-            var localVarQueryParams = new Dictionary<String, String>();
-            var localVarHeaderParams = new Dictionary<String, String>(Configuration.DefaultHeader);
-            var localVarFormParams = new Dictionary<String, String>();
-            var localVarFileParams = new Dictionary<String, FileParameter>();
-            Object localVarPostBody = null;
+            var localVarPathParams = new Dictionary<string, string>();
+            var localVarQueryParams = new Dictionary<string, string>();
+            var localVarHeaderParams = new Dictionary<string, string>(Configuration.DefaultHeader);
+            var localVarFormParams = new Dictionary<string, string>();
+            var localVarFileParams = new Dictionary<string, FileParameter>();
+            object localVarPostBody = null;
 
             // to determine the Content-Type header
-            String[] localVarHttpContentTypes = new String[] {
+            string[] localVarHttpContentTypes = new string[] {
                 "application/json;charset=utf-8"
             };
-            String localVarHttpContentType = Configuration.ApiClient.SelectHeaderContentType(localVarHttpContentTypes);
+            string localVarHttpContentType = Configuration.ApiClient.SelectHeaderContentType(localVarHttpContentTypes);
 
             // to determine the Accept header
-            String[] localVarHttpHeaderAccepts = new String[] {
+            string[] localVarHttpHeaderAccepts = new string[] {
                 "application/json;charset=utf-8"
             };
-            String localVarHttpHeaderAccept = Configuration.ApiClient.SelectHeaderAccept(localVarHttpHeaderAccepts);
+            string localVarHttpHeaderAccept = Configuration.ApiClient.SelectHeaderAccept(localVarHttpHeaderAccepts);
             if (localVarHttpHeaderAccept != null)
+            {
                 localVarHeaderParams.Add("Accept", localVarHttpHeaderAccept);
+            }
 
-            if (customerTokenId != null) localVarPathParams.Add("customerTokenId", Configuration.ApiClient.ParameterToString(customerTokenId)); // path parameter
-            if (shippingAddressTokenId != null) localVarPathParams.Add("shippingAddressTokenId", Configuration.ApiClient.ParameterToString(shippingAddressTokenId)); // path parameter
-            if (profileId != null) localVarHeaderParams.Add("profile-id", Configuration.ApiClient.ParameterToString(profileId)); // header parameter
+            if (customerTokenId != null)
+            {
+                localVarPathParams.Add("customerTokenId", Configuration.ApiClient.ParameterToString(customerTokenId)); // path parameter
+            }
+            if (shippingAddressTokenId != null)
+            {
+                localVarPathParams.Add("shippingAddressTokenId", Configuration.ApiClient.ParameterToString(shippingAddressTokenId)); // path parameter
+            }
+            logger.Debug($"HTTP Request Body :\n{logUtility.ConvertDictionaryToString(localVarPathParams)}");
+            logger.Debug($"HTTP Request Body :\n{logUtility.ConvertDictionaryToString(localVarPathParams)}");
+            if (profileId != null)
+            {
+                localVarHeaderParams.Add("profile-id", Configuration.ApiClient.ParameterToString(profileId)); // header parameter
+            }
 
 
             // make the HTTP request
@@ -615,7 +703,11 @@ namespace CyberSource.Api
             if (ExceptionFactory != null)
             {
                 Exception exception = ExceptionFactory("GetCustomerShippingAddress", localVarResponse);
-                if (exception != null) throw exception;
+                if (exception != null)
+                {
+                    logger.Error($"Exception : {exception.Message}");
+                    throw exception;
+                }
             }
 
             return new ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress>(localVarStatusCode,
@@ -633,8 +725,10 @@ namespace CyberSource.Api
         /// <returns>Task of Tmsv2customersEmbeddedDefaultShippingAddress</returns>
         public async System.Threading.Tasks.Task<Tmsv2customersEmbeddedDefaultShippingAddress> GetCustomerShippingAddressAsync (string customerTokenId, string shippingAddressTokenId, string profileId = null)
         {
-             ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress> localVarResponse = await GetCustomerShippingAddressAsyncWithHttpInfo(customerTokenId, shippingAddressTokenId, profileId);
-             return localVarResponse.Data;
+            logger.Debug("CALLING API \"GetCustomerShippingAddressAsync\" STARTED");
+            ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress> localVarResponse = await GetCustomerShippingAddressAsyncWithHttpInfo(customerTokenId, shippingAddressTokenId, profileId);
+            logger.Debug("CALLING API \"GetCustomerShippingAddressAsync\" STARTED");
+            return localVarResponse.Data;
 
         }
 
@@ -648,58 +742,82 @@ namespace CyberSource.Api
         /// <returns>Task of ApiResponse (Tmsv2customersEmbeddedDefaultShippingAddress)</returns>
         public async System.Threading.Tasks.Task<ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress>> GetCustomerShippingAddressAsyncWithHttpInfo (string customerTokenId, string shippingAddressTokenId, string profileId = null)
         {
+            LogUtility logUtility = new LogUtility();
+
             // verify the required parameter 'customerTokenId' is set
             if (customerTokenId == null)
+            {
+                logger.Error("ApiException : Missing required parameter 'customerTokenId' when calling CustomerShippingAddressApi->GetCustomerShippingAddress");
                 throw new ApiException(400, "Missing required parameter 'customerTokenId' when calling CustomerShippingAddressApi->GetCustomerShippingAddress");
+            }
             // verify the required parameter 'shippingAddressTokenId' is set
             if (shippingAddressTokenId == null)
+            {
+                logger.Error("ApiException : Missing required parameter 'shippingAddressTokenId' when calling CustomerShippingAddressApi->GetCustomerShippingAddress");
                 throw new ApiException(400, "Missing required parameter 'shippingAddressTokenId' when calling CustomerShippingAddressApi->GetCustomerShippingAddress");
+            }
 
             var localVarPath = $"/tms/v2/customers/{customerTokenId}/shipping-addresses/{shippingAddressTokenId}";
-            var localVarPathParams = new Dictionary<String, String>();
-            var localVarQueryParams = new Dictionary<String, String>();
-            var localVarHeaderParams = new Dictionary<String, String>(Configuration.DefaultHeader);
-            var localVarFormParams = new Dictionary<String, String>();
-            var localVarFileParams = new Dictionary<String, FileParameter>();
-            Object localVarPostBody = null;
+            var localVarPathParams = new Dictionary<string, string>();
+            var localVarQueryParams = new Dictionary<string, string>();
+            var localVarHeaderParams = new Dictionary<string, string>(Configuration.DefaultHeader);
+            var localVarFormParams = new Dictionary<string, string>();
+            var localVarFileParams = new Dictionary<string, FileParameter>();
+            object localVarPostBody = null;
 
             // to determine the Content-Type header
-            String[] localVarHttpContentTypes = new String[] {
+            string[] localVarHttpContentTypes = new string[] {
                 "application/json;charset=utf-8"
             };
-            String localVarHttpContentType = Configuration.ApiClient.SelectHeaderContentType(localVarHttpContentTypes);
+            string localVarHttpContentType = Configuration.ApiClient.SelectHeaderContentType(localVarHttpContentTypes);
 
             // to determine the Accept header
-            String[] localVarHttpHeaderAccepts = new String[] {
+            string[] localVarHttpHeaderAccepts = new string[] {
                 "application/json;charset=utf-8"
             };
-            String localVarHttpHeaderAccept = Configuration.ApiClient.SelectHeaderAccept(localVarHttpHeaderAccepts);
+            string localVarHttpHeaderAccept = Configuration.ApiClient.SelectHeaderAccept(localVarHttpHeaderAccepts);
             if (localVarHttpHeaderAccept != null)
+            {
                 localVarHeaderParams.Add("Accept", localVarHttpHeaderAccept);
+            }
 
-            if (customerTokenId != null) localVarPathParams.Add("customerTokenId", Configuration.ApiClient.ParameterToString(customerTokenId)); // path parameter
-            if (shippingAddressTokenId != null) localVarPathParams.Add("shippingAddressTokenId", Configuration.ApiClient.ParameterToString(shippingAddressTokenId)); // path parameter
-            if (profileId != null) localVarHeaderParams.Add("profile-id", Configuration.ApiClient.ParameterToString(profileId)); // header parameter
+            if (customerTokenId != null)
+            {
+                localVarPathParams.Add("customerTokenId", Configuration.ApiClient.ParameterToString(customerTokenId)); // path parameter
+            }
+            if (shippingAddressTokenId != null)
+            {
+                localVarPathParams.Add("shippingAddressTokenId", Configuration.ApiClient.ParameterToString(shippingAddressTokenId)); // path parameter
+            }
+            logger.Debug($"HTTP Request Body :\n{logUtility.ConvertDictionaryToString(localVarPathParams)}");
+            logger.Debug($"HTTP Request Body :\n{logUtility.ConvertDictionaryToString(localVarPathParams)}");
+            if (profileId != null)
+            {
+                localVarHeaderParams.Add("profile-id", Configuration.ApiClient.ParameterToString(profileId)); // header parameter
+            }
 
 
             // make the HTTP request
-            IRestResponse localVarResponse = (IRestResponse) await Configuration.ApiClient.CallApiAsync(localVarPath,
+            IRestResponse localVarResponse = (IRestResponse)await Configuration.ApiClient.CallApiAsync(localVarPath,
                 Method.GET, localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarFileParams,
                 localVarPathParams, localVarHttpContentType);
 
-            int localVarStatusCode = (int) localVarResponse.StatusCode;
+            int localVarStatusCode = (int)localVarResponse.StatusCode;
 
             if (ExceptionFactory != null)
             {
                 Exception exception = ExceptionFactory("GetCustomerShippingAddress", localVarResponse);
-                if (exception != null) throw exception;
+                if (exception != null)
+                {
+                    logger.Error($"Exception : {exception.Message}");
+                    throw exception;
+                }
             }
 
             return new ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress>(localVarStatusCode,
                 localVarResponse.Headers.ToDictionary(x => x.Name, x => x.Value.ToString()),
                 (Tmsv2customersEmbeddedDefaultShippingAddress) Configuration.ApiClient.Deserialize(localVarResponse, typeof(Tmsv2customersEmbeddedDefaultShippingAddress))); // Return statement
         }
-
         /// <summary>
         /// List Shipping Addresses for a Customer 
         /// </summary>
@@ -711,8 +829,10 @@ namespace CyberSource.Api
         /// <returns>ShippingAddressListForCustomer</returns>
         public ShippingAddressListForCustomer GetCustomerShippingAddressesList (string customerTokenId, string profileId = null, long? offset = null, long? limit = null)
         {
-             ApiResponse<ShippingAddressListForCustomer> localVarResponse = GetCustomerShippingAddressesListWithHttpInfo(customerTokenId, profileId, offset, limit);
-             return localVarResponse.Data;
+            logger.Debug("CALLING API \"GetCustomerShippingAddressesList\" STARTED");
+            ApiResponse<ShippingAddressListForCustomer> localVarResponse = GetCustomerShippingAddressesListWithHttpInfo(customerTokenId, profileId, offset, limit);
+            logger.Debug("CALLING API \"GetCustomerShippingAddressesList\" ENDED");
+            return localVarResponse.Data;
         }
 
         /// <summary>
@@ -726,36 +846,58 @@ namespace CyberSource.Api
         /// <returns>ApiResponse of ShippingAddressListForCustomer</returns>
         public ApiResponse< ShippingAddressListForCustomer > GetCustomerShippingAddressesListWithHttpInfo (string customerTokenId, string profileId = null, long? offset = null, long? limit = null)
         {
+            LogUtility logUtility = new LogUtility();
+
             // verify the required parameter 'customerTokenId' is set
             if (customerTokenId == null)
+            {
+                logger.Error("ApiException : Missing required parameter 'customerTokenId' when calling CustomerShippingAddressApi->GetCustomerShippingAddressesList");
                 throw new ApiException(400, "Missing required parameter 'customerTokenId' when calling CustomerShippingAddressApi->GetCustomerShippingAddressesList");
+            }
 
             var localVarPath = $"/tms/v2/customers/{customerTokenId}/shipping-addresses";
-            var localVarPathParams = new Dictionary<String, String>();
-            var localVarQueryParams = new Dictionary<String, String>();
-            var localVarHeaderParams = new Dictionary<String, String>(Configuration.DefaultHeader);
-            var localVarFormParams = new Dictionary<String, String>();
-            var localVarFileParams = new Dictionary<String, FileParameter>();
-            Object localVarPostBody = null;
+            var localVarPathParams = new Dictionary<string, string>();
+            var localVarQueryParams = new Dictionary<string, string>();
+            var localVarHeaderParams = new Dictionary<string, string>(Configuration.DefaultHeader);
+            var localVarFormParams = new Dictionary<string, string>();
+            var localVarFileParams = new Dictionary<string, FileParameter>();
+            object localVarPostBody = null;
 
             // to determine the Content-Type header
-            String[] localVarHttpContentTypes = new String[] {
+            string[] localVarHttpContentTypes = new string[] {
                 "application/json;charset=utf-8"
             };
-            String localVarHttpContentType = Configuration.ApiClient.SelectHeaderContentType(localVarHttpContentTypes);
+            string localVarHttpContentType = Configuration.ApiClient.SelectHeaderContentType(localVarHttpContentTypes);
 
             // to determine the Accept header
-            String[] localVarHttpHeaderAccepts = new String[] {
+            string[] localVarHttpHeaderAccepts = new string[] {
                 "application/json;charset=utf-8"
             };
-            String localVarHttpHeaderAccept = Configuration.ApiClient.SelectHeaderAccept(localVarHttpHeaderAccepts);
+            string localVarHttpHeaderAccept = Configuration.ApiClient.SelectHeaderAccept(localVarHttpHeaderAccepts);
             if (localVarHttpHeaderAccept != null)
+            {
                 localVarHeaderParams.Add("Accept", localVarHttpHeaderAccept);
+            }
 
-            if (customerTokenId != null) localVarPathParams.Add("customerTokenId", Configuration.ApiClient.ParameterToString(customerTokenId)); // path parameter
-            if (offset != null) localVarQueryParams.Add("offset", Configuration.ApiClient.ParameterToString(offset)); // query parameter
-            if (limit != null) localVarQueryParams.Add("limit", Configuration.ApiClient.ParameterToString(limit)); // query parameter
-            if (profileId != null) localVarHeaderParams.Add("profile-id", Configuration.ApiClient.ParameterToString(profileId)); // header parameter
+            if (customerTokenId != null)
+            {
+                localVarPathParams.Add("customerTokenId", Configuration.ApiClient.ParameterToString(customerTokenId)); // path parameter
+            }
+            logger.Debug($"HTTP Request Body :\n{logUtility.ConvertDictionaryToString(localVarPathParams)}");
+            if (offset != null)
+            {
+                localVarQueryParams.Add("offset", Configuration.ApiClient.ParameterToString(offset)); // query parameter
+            }
+            if (limit != null)
+            {
+                localVarQueryParams.Add("limit", Configuration.ApiClient.ParameterToString(limit)); // query parameter
+            }
+            logger.Debug($"HTTP Request Body :\n{logUtility.ConvertDictionaryToString(localVarQueryParams)}");
+            logger.Debug($"HTTP Request Body :\n{logUtility.ConvertDictionaryToString(localVarQueryParams)}");
+            if (profileId != null)
+            {
+                localVarHeaderParams.Add("profile-id", Configuration.ApiClient.ParameterToString(profileId)); // header parameter
+            }
 
 
             // make the HTTP request
@@ -768,7 +910,11 @@ namespace CyberSource.Api
             if (ExceptionFactory != null)
             {
                 Exception exception = ExceptionFactory("GetCustomerShippingAddressesList", localVarResponse);
-                if (exception != null) throw exception;
+                if (exception != null)
+                {
+                    logger.Error($"Exception : {exception.Message}");
+                    throw exception;
+                }
             }
 
             return new ApiResponse<ShippingAddressListForCustomer>(localVarStatusCode,
@@ -787,8 +933,10 @@ namespace CyberSource.Api
         /// <returns>Task of ShippingAddressListForCustomer</returns>
         public async System.Threading.Tasks.Task<ShippingAddressListForCustomer> GetCustomerShippingAddressesListAsync (string customerTokenId, string profileId = null, long? offset = null, long? limit = null)
         {
-             ApiResponse<ShippingAddressListForCustomer> localVarResponse = await GetCustomerShippingAddressesListAsyncWithHttpInfo(customerTokenId, profileId, offset, limit);
-             return localVarResponse.Data;
+            logger.Debug("CALLING API \"GetCustomerShippingAddressesListAsync\" STARTED");
+            ApiResponse<ShippingAddressListForCustomer> localVarResponse = await GetCustomerShippingAddressesListAsyncWithHttpInfo(customerTokenId, profileId, offset, limit);
+            logger.Debug("CALLING API \"GetCustomerShippingAddressesListAsync\" STARTED");
+            return localVarResponse.Data;
 
         }
 
@@ -803,56 +951,81 @@ namespace CyberSource.Api
         /// <returns>Task of ApiResponse (ShippingAddressListForCustomer)</returns>
         public async System.Threading.Tasks.Task<ApiResponse<ShippingAddressListForCustomer>> GetCustomerShippingAddressesListAsyncWithHttpInfo (string customerTokenId, string profileId = null, long? offset = null, long? limit = null)
         {
+            LogUtility logUtility = new LogUtility();
+
             // verify the required parameter 'customerTokenId' is set
             if (customerTokenId == null)
+            {
+                logger.Error("ApiException : Missing required parameter 'customerTokenId' when calling CustomerShippingAddressApi->GetCustomerShippingAddressesList");
                 throw new ApiException(400, "Missing required parameter 'customerTokenId' when calling CustomerShippingAddressApi->GetCustomerShippingAddressesList");
+            }
 
             var localVarPath = $"/tms/v2/customers/{customerTokenId}/shipping-addresses";
-            var localVarPathParams = new Dictionary<String, String>();
-            var localVarQueryParams = new Dictionary<String, String>();
-            var localVarHeaderParams = new Dictionary<String, String>(Configuration.DefaultHeader);
-            var localVarFormParams = new Dictionary<String, String>();
-            var localVarFileParams = new Dictionary<String, FileParameter>();
-            Object localVarPostBody = null;
+            var localVarPathParams = new Dictionary<string, string>();
+            var localVarQueryParams = new Dictionary<string, string>();
+            var localVarHeaderParams = new Dictionary<string, string>(Configuration.DefaultHeader);
+            var localVarFormParams = new Dictionary<string, string>();
+            var localVarFileParams = new Dictionary<string, FileParameter>();
+            object localVarPostBody = null;
 
             // to determine the Content-Type header
-            String[] localVarHttpContentTypes = new String[] {
+            string[] localVarHttpContentTypes = new string[] {
                 "application/json;charset=utf-8"
             };
-            String localVarHttpContentType = Configuration.ApiClient.SelectHeaderContentType(localVarHttpContentTypes);
+            string localVarHttpContentType = Configuration.ApiClient.SelectHeaderContentType(localVarHttpContentTypes);
 
             // to determine the Accept header
-            String[] localVarHttpHeaderAccepts = new String[] {
+            string[] localVarHttpHeaderAccepts = new string[] {
                 "application/json;charset=utf-8"
             };
-            String localVarHttpHeaderAccept = Configuration.ApiClient.SelectHeaderAccept(localVarHttpHeaderAccepts);
+            string localVarHttpHeaderAccept = Configuration.ApiClient.SelectHeaderAccept(localVarHttpHeaderAccepts);
             if (localVarHttpHeaderAccept != null)
+            {
                 localVarHeaderParams.Add("Accept", localVarHttpHeaderAccept);
+            }
 
-            if (customerTokenId != null) localVarPathParams.Add("customerTokenId", Configuration.ApiClient.ParameterToString(customerTokenId)); // path parameter
-            if (offset != null) localVarQueryParams.Add("offset", Configuration.ApiClient.ParameterToString(offset)); // query parameter
-            if (limit != null) localVarQueryParams.Add("limit", Configuration.ApiClient.ParameterToString(limit)); // query parameter
-            if (profileId != null) localVarHeaderParams.Add("profile-id", Configuration.ApiClient.ParameterToString(profileId)); // header parameter
+            if (customerTokenId != null)
+            {
+                localVarPathParams.Add("customerTokenId", Configuration.ApiClient.ParameterToString(customerTokenId)); // path parameter
+            }
+            logger.Debug($"HTTP Request Body :\n{logUtility.ConvertDictionaryToString(localVarPathParams)}");
+            if (offset != null)
+            {
+                localVarQueryParams.Add("offset", Configuration.ApiClient.ParameterToString(offset)); // query parameter
+            }
+            if (limit != null)
+            {
+                localVarQueryParams.Add("limit", Configuration.ApiClient.ParameterToString(limit)); // query parameter
+            }
+            logger.Debug($"HTTP Request Body :\n{logUtility.ConvertDictionaryToString(localVarQueryParams)}");
+            logger.Debug($"HTTP Request Body :\n{logUtility.ConvertDictionaryToString(localVarQueryParams)}");
+            if (profileId != null)
+            {
+                localVarHeaderParams.Add("profile-id", Configuration.ApiClient.ParameterToString(profileId)); // header parameter
+            }
 
 
             // make the HTTP request
-            IRestResponse localVarResponse = (IRestResponse) await Configuration.ApiClient.CallApiAsync(localVarPath,
+            IRestResponse localVarResponse = (IRestResponse)await Configuration.ApiClient.CallApiAsync(localVarPath,
                 Method.GET, localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarFileParams,
                 localVarPathParams, localVarHttpContentType);
 
-            int localVarStatusCode = (int) localVarResponse.StatusCode;
+            int localVarStatusCode = (int)localVarResponse.StatusCode;
 
             if (ExceptionFactory != null)
             {
                 Exception exception = ExceptionFactory("GetCustomerShippingAddressesList", localVarResponse);
-                if (exception != null) throw exception;
+                if (exception != null)
+                {
+                    logger.Error($"Exception : {exception.Message}");
+                    throw exception;
+                }
             }
 
             return new ApiResponse<ShippingAddressListForCustomer>(localVarStatusCode,
                 localVarResponse.Headers.ToDictionary(x => x.Name, x => x.Value.ToString()),
                 (ShippingAddressListForCustomer) Configuration.ApiClient.Deserialize(localVarResponse, typeof(ShippingAddressListForCustomer))); // Return statement
         }
-
         /// <summary>
         /// Update a Customer Shipping Address 
         /// </summary>
@@ -865,8 +1038,10 @@ namespace CyberSource.Api
         /// <returns>Tmsv2customersEmbeddedDefaultShippingAddress</returns>
         public Tmsv2customersEmbeddedDefaultShippingAddress PatchCustomersShippingAddress (string customerTokenId, string shippingAddressTokenId, PatchCustomerShippingAddressRequest patchCustomerShippingAddressRequest, string profileId = null, string ifMatch = null)
         {
-             ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress> localVarResponse = PatchCustomersShippingAddressWithHttpInfo(customerTokenId, shippingAddressTokenId, patchCustomerShippingAddressRequest, profileId, ifMatch);
-             return localVarResponse.Data;
+            logger.Debug("CALLING API \"PatchCustomersShippingAddress\" STARTED");
+            ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress> localVarResponse = PatchCustomersShippingAddressWithHttpInfo(customerTokenId, shippingAddressTokenId, patchCustomerShippingAddressRequest, profileId, ifMatch);
+            logger.Debug("CALLING API \"PatchCustomersShippingAddress\" ENDED");
+            return localVarResponse.Data;
         }
 
         /// <summary>
@@ -881,42 +1056,69 @@ namespace CyberSource.Api
         /// <returns>ApiResponse of Tmsv2customersEmbeddedDefaultShippingAddress</returns>
         public ApiResponse< Tmsv2customersEmbeddedDefaultShippingAddress > PatchCustomersShippingAddressWithHttpInfo (string customerTokenId, string shippingAddressTokenId, PatchCustomerShippingAddressRequest patchCustomerShippingAddressRequest, string profileId = null, string ifMatch = null)
         {
+            LogUtility logUtility = new LogUtility();
+
             // verify the required parameter 'customerTokenId' is set
             if (customerTokenId == null)
+            {
+                logger.Error("ApiException : Missing required parameter 'customerTokenId' when calling CustomerShippingAddressApi->PatchCustomersShippingAddress");
                 throw new ApiException(400, "Missing required parameter 'customerTokenId' when calling CustomerShippingAddressApi->PatchCustomersShippingAddress");
+            }
             // verify the required parameter 'shippingAddressTokenId' is set
             if (shippingAddressTokenId == null)
+            {
+                logger.Error("ApiException : Missing required parameter 'shippingAddressTokenId' when calling CustomerShippingAddressApi->PatchCustomersShippingAddress");
                 throw new ApiException(400, "Missing required parameter 'shippingAddressTokenId' when calling CustomerShippingAddressApi->PatchCustomersShippingAddress");
+            }
             // verify the required parameter 'patchCustomerShippingAddressRequest' is set
             if (patchCustomerShippingAddressRequest == null)
+            {
+                logger.Error("ApiException : Missing required parameter 'patchCustomerShippingAddressRequest' when calling CustomerShippingAddressApi->PatchCustomersShippingAddress");
                 throw new ApiException(400, "Missing required parameter 'patchCustomerShippingAddressRequest' when calling CustomerShippingAddressApi->PatchCustomersShippingAddress");
+            }
 
             var localVarPath = $"/tms/v2/customers/{customerTokenId}/shipping-addresses/{shippingAddressTokenId}";
-            var localVarPathParams = new Dictionary<String, String>();
-            var localVarQueryParams = new Dictionary<String, String>();
-            var localVarHeaderParams = new Dictionary<String, String>(Configuration.DefaultHeader);
-            var localVarFormParams = new Dictionary<String, String>();
-            var localVarFileParams = new Dictionary<String, FileParameter>();
-            Object localVarPostBody = null;
+            var localVarPathParams = new Dictionary<string, string>();
+            var localVarQueryParams = new Dictionary<string, string>();
+            var localVarHeaderParams = new Dictionary<string, string>(Configuration.DefaultHeader);
+            var localVarFormParams = new Dictionary<string, string>();
+            var localVarFileParams = new Dictionary<string, FileParameter>();
+            object localVarPostBody = null;
 
             // to determine the Content-Type header
-            String[] localVarHttpContentTypes = new String[] {
+            string[] localVarHttpContentTypes = new string[] {
                 "application/json;charset=utf-8"
             };
-            String localVarHttpContentType = Configuration.ApiClient.SelectHeaderContentType(localVarHttpContentTypes);
+            string localVarHttpContentType = Configuration.ApiClient.SelectHeaderContentType(localVarHttpContentTypes);
 
             // to determine the Accept header
-            String[] localVarHttpHeaderAccepts = new String[] {
+            string[] localVarHttpHeaderAccepts = new string[] {
                 "application/json;charset=utf-8"
             };
-            String localVarHttpHeaderAccept = Configuration.ApiClient.SelectHeaderAccept(localVarHttpHeaderAccepts);
+            string localVarHttpHeaderAccept = Configuration.ApiClient.SelectHeaderAccept(localVarHttpHeaderAccepts);
             if (localVarHttpHeaderAccept != null)
+            {
                 localVarHeaderParams.Add("Accept", localVarHttpHeaderAccept);
+            }
 
-            if (customerTokenId != null) localVarPathParams.Add("customerTokenId", Configuration.ApiClient.ParameterToString(customerTokenId)); // path parameter
-            if (shippingAddressTokenId != null) localVarPathParams.Add("shippingAddressTokenId", Configuration.ApiClient.ParameterToString(shippingAddressTokenId)); // path parameter
-            if (profileId != null) localVarHeaderParams.Add("profile-id", Configuration.ApiClient.ParameterToString(profileId)); // header parameter
-            if (ifMatch != null) localVarHeaderParams.Add("if-match", Configuration.ApiClient.ParameterToString(ifMatch)); // header parameter
+            if (customerTokenId != null)
+            {
+                localVarPathParams.Add("customerTokenId", Configuration.ApiClient.ParameterToString(customerTokenId)); // path parameter
+            }
+            if (shippingAddressTokenId != null)
+            {
+                localVarPathParams.Add("shippingAddressTokenId", Configuration.ApiClient.ParameterToString(shippingAddressTokenId)); // path parameter
+            }
+            logger.Debug($"HTTP Request Body :\n{logUtility.ConvertDictionaryToString(localVarPathParams)}");
+            logger.Debug($"HTTP Request Body :\n{logUtility.ConvertDictionaryToString(localVarPathParams)}");
+            if (profileId != null)
+            {
+                localVarHeaderParams.Add("profile-id", Configuration.ApiClient.ParameterToString(profileId)); // header parameter
+            }
+            if (ifMatch != null)
+            {
+                localVarHeaderParams.Add("if-match", Configuration.ApiClient.ParameterToString(ifMatch)); // header parameter
+            }
             if (patchCustomerShippingAddressRequest != null && patchCustomerShippingAddressRequest.GetType() != typeof(byte[]))
             {
                 localVarPostBody = Configuration.ApiClient.Serialize(patchCustomerShippingAddressRequest); // http body (model) parameter
@@ -924,6 +1126,15 @@ namespace CyberSource.Api
             else
             {
                 localVarPostBody = patchCustomerShippingAddressRequest; // byte array
+            }
+
+            if (logUtility.IsMaskingEnabled(logger))
+            {
+                logger.Debug($"HTTP Request Body :\n{logUtility.MaskSensitiveData(localVarPostBody.ToString())}");
+            }
+            else
+            {
+                logger.Debug($"HTTP Request Body :\n{localVarPostBody}");
             }
 
 
@@ -937,7 +1148,11 @@ namespace CyberSource.Api
             if (ExceptionFactory != null)
             {
                 Exception exception = ExceptionFactory("PatchCustomersShippingAddress", localVarResponse);
-                if (exception != null) throw exception;
+                if (exception != null)
+                {
+                    logger.Error($"Exception : {exception.Message}");
+                    throw exception;
+                }
             }
 
             return new ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress>(localVarStatusCode,
@@ -957,8 +1172,10 @@ namespace CyberSource.Api
         /// <returns>Task of Tmsv2customersEmbeddedDefaultShippingAddress</returns>
         public async System.Threading.Tasks.Task<Tmsv2customersEmbeddedDefaultShippingAddress> PatchCustomersShippingAddressAsync (string customerTokenId, string shippingAddressTokenId, PatchCustomerShippingAddressRequest patchCustomerShippingAddressRequest, string profileId = null, string ifMatch = null)
         {
-             ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress> localVarResponse = await PatchCustomersShippingAddressAsyncWithHttpInfo(customerTokenId, shippingAddressTokenId, patchCustomerShippingAddressRequest, profileId, ifMatch);
-             return localVarResponse.Data;
+            logger.Debug("CALLING API \"PatchCustomersShippingAddressAsync\" STARTED");
+            ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress> localVarResponse = await PatchCustomersShippingAddressAsyncWithHttpInfo(customerTokenId, shippingAddressTokenId, patchCustomerShippingAddressRequest, profileId, ifMatch);
+            logger.Debug("CALLING API \"PatchCustomersShippingAddressAsync\" STARTED");
+            return localVarResponse.Data;
 
         }
 
@@ -974,42 +1191,69 @@ namespace CyberSource.Api
         /// <returns>Task of ApiResponse (Tmsv2customersEmbeddedDefaultShippingAddress)</returns>
         public async System.Threading.Tasks.Task<ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress>> PatchCustomersShippingAddressAsyncWithHttpInfo (string customerTokenId, string shippingAddressTokenId, PatchCustomerShippingAddressRequest patchCustomerShippingAddressRequest, string profileId = null, string ifMatch = null)
         {
+            LogUtility logUtility = new LogUtility();
+
             // verify the required parameter 'customerTokenId' is set
             if (customerTokenId == null)
+            {
+                logger.Error("ApiException : Missing required parameter 'customerTokenId' when calling CustomerShippingAddressApi->PatchCustomersShippingAddress");
                 throw new ApiException(400, "Missing required parameter 'customerTokenId' when calling CustomerShippingAddressApi->PatchCustomersShippingAddress");
+            }
             // verify the required parameter 'shippingAddressTokenId' is set
             if (shippingAddressTokenId == null)
+            {
+                logger.Error("ApiException : Missing required parameter 'shippingAddressTokenId' when calling CustomerShippingAddressApi->PatchCustomersShippingAddress");
                 throw new ApiException(400, "Missing required parameter 'shippingAddressTokenId' when calling CustomerShippingAddressApi->PatchCustomersShippingAddress");
+            }
             // verify the required parameter 'patchCustomerShippingAddressRequest' is set
             if (patchCustomerShippingAddressRequest == null)
+            {
+                logger.Error("ApiException : Missing required parameter 'patchCustomerShippingAddressRequest' when calling CustomerShippingAddressApi->PatchCustomersShippingAddress");
                 throw new ApiException(400, "Missing required parameter 'patchCustomerShippingAddressRequest' when calling CustomerShippingAddressApi->PatchCustomersShippingAddress");
+            }
 
             var localVarPath = $"/tms/v2/customers/{customerTokenId}/shipping-addresses/{shippingAddressTokenId}";
-            var localVarPathParams = new Dictionary<String, String>();
-            var localVarQueryParams = new Dictionary<String, String>();
-            var localVarHeaderParams = new Dictionary<String, String>(Configuration.DefaultHeader);
-            var localVarFormParams = new Dictionary<String, String>();
-            var localVarFileParams = new Dictionary<String, FileParameter>();
-            Object localVarPostBody = null;
+            var localVarPathParams = new Dictionary<string, string>();
+            var localVarQueryParams = new Dictionary<string, string>();
+            var localVarHeaderParams = new Dictionary<string, string>(Configuration.DefaultHeader);
+            var localVarFormParams = new Dictionary<string, string>();
+            var localVarFileParams = new Dictionary<string, FileParameter>();
+            object localVarPostBody = null;
 
             // to determine the Content-Type header
-            String[] localVarHttpContentTypes = new String[] {
+            string[] localVarHttpContentTypes = new string[] {
                 "application/json;charset=utf-8"
             };
-            String localVarHttpContentType = Configuration.ApiClient.SelectHeaderContentType(localVarHttpContentTypes);
+            string localVarHttpContentType = Configuration.ApiClient.SelectHeaderContentType(localVarHttpContentTypes);
 
             // to determine the Accept header
-            String[] localVarHttpHeaderAccepts = new String[] {
+            string[] localVarHttpHeaderAccepts = new string[] {
                 "application/json;charset=utf-8"
             };
-            String localVarHttpHeaderAccept = Configuration.ApiClient.SelectHeaderAccept(localVarHttpHeaderAccepts);
+            string localVarHttpHeaderAccept = Configuration.ApiClient.SelectHeaderAccept(localVarHttpHeaderAccepts);
             if (localVarHttpHeaderAccept != null)
+            {
                 localVarHeaderParams.Add("Accept", localVarHttpHeaderAccept);
+            }
 
-            if (customerTokenId != null) localVarPathParams.Add("customerTokenId", Configuration.ApiClient.ParameterToString(customerTokenId)); // path parameter
-            if (shippingAddressTokenId != null) localVarPathParams.Add("shippingAddressTokenId", Configuration.ApiClient.ParameterToString(shippingAddressTokenId)); // path parameter
-            if (profileId != null) localVarHeaderParams.Add("profile-id", Configuration.ApiClient.ParameterToString(profileId)); // header parameter
-            if (ifMatch != null) localVarHeaderParams.Add("if-match", Configuration.ApiClient.ParameterToString(ifMatch)); // header parameter
+            if (customerTokenId != null)
+            {
+                localVarPathParams.Add("customerTokenId", Configuration.ApiClient.ParameterToString(customerTokenId)); // path parameter
+            }
+            if (shippingAddressTokenId != null)
+            {
+                localVarPathParams.Add("shippingAddressTokenId", Configuration.ApiClient.ParameterToString(shippingAddressTokenId)); // path parameter
+            }
+            logger.Debug($"HTTP Request Body :\n{logUtility.ConvertDictionaryToString(localVarPathParams)}");
+            logger.Debug($"HTTP Request Body :\n{logUtility.ConvertDictionaryToString(localVarPathParams)}");
+            if (profileId != null)
+            {
+                localVarHeaderParams.Add("profile-id", Configuration.ApiClient.ParameterToString(profileId)); // header parameter
+            }
+            if (ifMatch != null)
+            {
+                localVarHeaderParams.Add("if-match", Configuration.ApiClient.ParameterToString(ifMatch)); // header parameter
+            }
             if (patchCustomerShippingAddressRequest != null && patchCustomerShippingAddressRequest.GetType() != typeof(byte[]))
             {
                 localVarPostBody = Configuration.ApiClient.Serialize(patchCustomerShippingAddressRequest); // http body (model) parameter
@@ -1019,25 +1263,37 @@ namespace CyberSource.Api
                 localVarPostBody = patchCustomerShippingAddressRequest; // byte array
             }
 
+            if (logUtility.IsMaskingEnabled(logger))
+            {
+                logger.Debug($"HTTP Request Body :\n{logUtility.MaskSensitiveData(localVarPostBody.ToString())}");
+            }
+            else
+            {
+                logger.Debug($"HTTP Request Body :\n{localVarPostBody}");
+            }
+
 
             // make the HTTP request
-            IRestResponse localVarResponse = (IRestResponse) await Configuration.ApiClient.CallApiAsync(localVarPath,
+            IRestResponse localVarResponse = (IRestResponse)await Configuration.ApiClient.CallApiAsync(localVarPath,
                 Method.PATCH, localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarFileParams,
                 localVarPathParams, localVarHttpContentType);
 
-            int localVarStatusCode = (int) localVarResponse.StatusCode;
+            int localVarStatusCode = (int)localVarResponse.StatusCode;
 
             if (ExceptionFactory != null)
             {
                 Exception exception = ExceptionFactory("PatchCustomersShippingAddress", localVarResponse);
-                if (exception != null) throw exception;
+                if (exception != null)
+                {
+                    logger.Error($"Exception : {exception.Message}");
+                    throw exception;
+                }
             }
 
             return new ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress>(localVarStatusCode,
                 localVarResponse.Headers.ToDictionary(x => x.Name, x => x.Value.ToString()),
                 (Tmsv2customersEmbeddedDefaultShippingAddress) Configuration.ApiClient.Deserialize(localVarResponse, typeof(Tmsv2customersEmbeddedDefaultShippingAddress))); // Return statement
         }
-
         /// <summary>
         /// Create a Customer Shipping Address Include an existing TMS Customer token id in the request URI. * A Customer token can be created by calling: **POST *_/tms/v2/customers*** 
         /// </summary>
@@ -1048,8 +1304,10 @@ namespace CyberSource.Api
         /// <returns>Tmsv2customersEmbeddedDefaultShippingAddress</returns>
         public Tmsv2customersEmbeddedDefaultShippingAddress PostCustomerShippingAddress (string customerTokenId, PostCustomerShippingAddressRequest postCustomerShippingAddressRequest, string profileId = null)
         {
-             ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress> localVarResponse = PostCustomerShippingAddressWithHttpInfo(customerTokenId, postCustomerShippingAddressRequest, profileId);
-             return localVarResponse.Data;
+            logger.Debug("CALLING API \"PostCustomerShippingAddress\" STARTED");
+            ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress> localVarResponse = PostCustomerShippingAddressWithHttpInfo(customerTokenId, postCustomerShippingAddressRequest, profileId);
+            logger.Debug("CALLING API \"PostCustomerShippingAddress\" ENDED");
+            return localVarResponse.Data;
         }
 
         /// <summary>
@@ -1062,37 +1320,54 @@ namespace CyberSource.Api
         /// <returns>ApiResponse of Tmsv2customersEmbeddedDefaultShippingAddress</returns>
         public ApiResponse< Tmsv2customersEmbeddedDefaultShippingAddress > PostCustomerShippingAddressWithHttpInfo (string customerTokenId, PostCustomerShippingAddressRequest postCustomerShippingAddressRequest, string profileId = null)
         {
+            LogUtility logUtility = new LogUtility();
+
             // verify the required parameter 'customerTokenId' is set
             if (customerTokenId == null)
+            {
+                logger.Error("ApiException : Missing required parameter 'customerTokenId' when calling CustomerShippingAddressApi->PostCustomerShippingAddress");
                 throw new ApiException(400, "Missing required parameter 'customerTokenId' when calling CustomerShippingAddressApi->PostCustomerShippingAddress");
+            }
             // verify the required parameter 'postCustomerShippingAddressRequest' is set
             if (postCustomerShippingAddressRequest == null)
+            {
+                logger.Error("ApiException : Missing required parameter 'postCustomerShippingAddressRequest' when calling CustomerShippingAddressApi->PostCustomerShippingAddress");
                 throw new ApiException(400, "Missing required parameter 'postCustomerShippingAddressRequest' when calling CustomerShippingAddressApi->PostCustomerShippingAddress");
+            }
 
             var localVarPath = $"/tms/v2/customers/{customerTokenId}/shipping-addresses";
-            var localVarPathParams = new Dictionary<String, String>();
-            var localVarQueryParams = new Dictionary<String, String>();
-            var localVarHeaderParams = new Dictionary<String, String>(Configuration.DefaultHeader);
-            var localVarFormParams = new Dictionary<String, String>();
-            var localVarFileParams = new Dictionary<String, FileParameter>();
-            Object localVarPostBody = null;
+            var localVarPathParams = new Dictionary<string, string>();
+            var localVarQueryParams = new Dictionary<string, string>();
+            var localVarHeaderParams = new Dictionary<string, string>(Configuration.DefaultHeader);
+            var localVarFormParams = new Dictionary<string, string>();
+            var localVarFileParams = new Dictionary<string, FileParameter>();
+            object localVarPostBody = null;
 
             // to determine the Content-Type header
-            String[] localVarHttpContentTypes = new String[] {
+            string[] localVarHttpContentTypes = new string[] {
                 "application/json;charset=utf-8"
             };
-            String localVarHttpContentType = Configuration.ApiClient.SelectHeaderContentType(localVarHttpContentTypes);
+            string localVarHttpContentType = Configuration.ApiClient.SelectHeaderContentType(localVarHttpContentTypes);
 
             // to determine the Accept header
-            String[] localVarHttpHeaderAccepts = new String[] {
+            string[] localVarHttpHeaderAccepts = new string[] {
                 "application/json;charset=utf-8"
             };
-            String localVarHttpHeaderAccept = Configuration.ApiClient.SelectHeaderAccept(localVarHttpHeaderAccepts);
+            string localVarHttpHeaderAccept = Configuration.ApiClient.SelectHeaderAccept(localVarHttpHeaderAccepts);
             if (localVarHttpHeaderAccept != null)
+            {
                 localVarHeaderParams.Add("Accept", localVarHttpHeaderAccept);
+            }
 
-            if (customerTokenId != null) localVarPathParams.Add("customerTokenId", Configuration.ApiClient.ParameterToString(customerTokenId)); // path parameter
-            if (profileId != null) localVarHeaderParams.Add("profile-id", Configuration.ApiClient.ParameterToString(profileId)); // header parameter
+            if (customerTokenId != null)
+            {
+                localVarPathParams.Add("customerTokenId", Configuration.ApiClient.ParameterToString(customerTokenId)); // path parameter
+            }
+            logger.Debug($"HTTP Request Body :\n{logUtility.ConvertDictionaryToString(localVarPathParams)}");
+            if (profileId != null)
+            {
+                localVarHeaderParams.Add("profile-id", Configuration.ApiClient.ParameterToString(profileId)); // header parameter
+            }
             if (postCustomerShippingAddressRequest != null && postCustomerShippingAddressRequest.GetType() != typeof(byte[]))
             {
                 localVarPostBody = Configuration.ApiClient.Serialize(postCustomerShippingAddressRequest); // http body (model) parameter
@@ -1100,6 +1375,15 @@ namespace CyberSource.Api
             else
             {
                 localVarPostBody = postCustomerShippingAddressRequest; // byte array
+            }
+
+            if (logUtility.IsMaskingEnabled(logger))
+            {
+                logger.Debug($"HTTP Request Body :\n{logUtility.MaskSensitiveData(localVarPostBody.ToString())}");
+            }
+            else
+            {
+                logger.Debug($"HTTP Request Body :\n{localVarPostBody}");
             }
 
 
@@ -1113,7 +1397,11 @@ namespace CyberSource.Api
             if (ExceptionFactory != null)
             {
                 Exception exception = ExceptionFactory("PostCustomerShippingAddress", localVarResponse);
-                if (exception != null) throw exception;
+                if (exception != null)
+                {
+                    logger.Error($"Exception : {exception.Message}");
+                    throw exception;
+                }
             }
 
             return new ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress>(localVarStatusCode,
@@ -1131,8 +1419,10 @@ namespace CyberSource.Api
         /// <returns>Task of Tmsv2customersEmbeddedDefaultShippingAddress</returns>
         public async System.Threading.Tasks.Task<Tmsv2customersEmbeddedDefaultShippingAddress> PostCustomerShippingAddressAsync (string customerTokenId, PostCustomerShippingAddressRequest postCustomerShippingAddressRequest, string profileId = null)
         {
-             ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress> localVarResponse = await PostCustomerShippingAddressAsyncWithHttpInfo(customerTokenId, postCustomerShippingAddressRequest, profileId);
-             return localVarResponse.Data;
+            logger.Debug("CALLING API \"PostCustomerShippingAddressAsync\" STARTED");
+            ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress> localVarResponse = await PostCustomerShippingAddressAsyncWithHttpInfo(customerTokenId, postCustomerShippingAddressRequest, profileId);
+            logger.Debug("CALLING API \"PostCustomerShippingAddressAsync\" STARTED");
+            return localVarResponse.Data;
 
         }
 
@@ -1146,37 +1436,54 @@ namespace CyberSource.Api
         /// <returns>Task of ApiResponse (Tmsv2customersEmbeddedDefaultShippingAddress)</returns>
         public async System.Threading.Tasks.Task<ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress>> PostCustomerShippingAddressAsyncWithHttpInfo (string customerTokenId, PostCustomerShippingAddressRequest postCustomerShippingAddressRequest, string profileId = null)
         {
+            LogUtility logUtility = new LogUtility();
+
             // verify the required parameter 'customerTokenId' is set
             if (customerTokenId == null)
+            {
+                logger.Error("ApiException : Missing required parameter 'customerTokenId' when calling CustomerShippingAddressApi->PostCustomerShippingAddress");
                 throw new ApiException(400, "Missing required parameter 'customerTokenId' when calling CustomerShippingAddressApi->PostCustomerShippingAddress");
+            }
             // verify the required parameter 'postCustomerShippingAddressRequest' is set
             if (postCustomerShippingAddressRequest == null)
+            {
+                logger.Error("ApiException : Missing required parameter 'postCustomerShippingAddressRequest' when calling CustomerShippingAddressApi->PostCustomerShippingAddress");
                 throw new ApiException(400, "Missing required parameter 'postCustomerShippingAddressRequest' when calling CustomerShippingAddressApi->PostCustomerShippingAddress");
+            }
 
             var localVarPath = $"/tms/v2/customers/{customerTokenId}/shipping-addresses";
-            var localVarPathParams = new Dictionary<String, String>();
-            var localVarQueryParams = new Dictionary<String, String>();
-            var localVarHeaderParams = new Dictionary<String, String>(Configuration.DefaultHeader);
-            var localVarFormParams = new Dictionary<String, String>();
-            var localVarFileParams = new Dictionary<String, FileParameter>();
-            Object localVarPostBody = null;
+            var localVarPathParams = new Dictionary<string, string>();
+            var localVarQueryParams = new Dictionary<string, string>();
+            var localVarHeaderParams = new Dictionary<string, string>(Configuration.DefaultHeader);
+            var localVarFormParams = new Dictionary<string, string>();
+            var localVarFileParams = new Dictionary<string, FileParameter>();
+            object localVarPostBody = null;
 
             // to determine the Content-Type header
-            String[] localVarHttpContentTypes = new String[] {
+            string[] localVarHttpContentTypes = new string[] {
                 "application/json;charset=utf-8"
             };
-            String localVarHttpContentType = Configuration.ApiClient.SelectHeaderContentType(localVarHttpContentTypes);
+            string localVarHttpContentType = Configuration.ApiClient.SelectHeaderContentType(localVarHttpContentTypes);
 
             // to determine the Accept header
-            String[] localVarHttpHeaderAccepts = new String[] {
+            string[] localVarHttpHeaderAccepts = new string[] {
                 "application/json;charset=utf-8"
             };
-            String localVarHttpHeaderAccept = Configuration.ApiClient.SelectHeaderAccept(localVarHttpHeaderAccepts);
+            string localVarHttpHeaderAccept = Configuration.ApiClient.SelectHeaderAccept(localVarHttpHeaderAccepts);
             if (localVarHttpHeaderAccept != null)
+            {
                 localVarHeaderParams.Add("Accept", localVarHttpHeaderAccept);
+            }
 
-            if (customerTokenId != null) localVarPathParams.Add("customerTokenId", Configuration.ApiClient.ParameterToString(customerTokenId)); // path parameter
-            if (profileId != null) localVarHeaderParams.Add("profile-id", Configuration.ApiClient.ParameterToString(profileId)); // header parameter
+            if (customerTokenId != null)
+            {
+                localVarPathParams.Add("customerTokenId", Configuration.ApiClient.ParameterToString(customerTokenId)); // path parameter
+            }
+            logger.Debug($"HTTP Request Body :\n{logUtility.ConvertDictionaryToString(localVarPathParams)}");
+            if (profileId != null)
+            {
+                localVarHeaderParams.Add("profile-id", Configuration.ApiClient.ParameterToString(profileId)); // header parameter
+            }
             if (postCustomerShippingAddressRequest != null && postCustomerShippingAddressRequest.GetType() != typeof(byte[]))
             {
                 localVarPostBody = Configuration.ApiClient.Serialize(postCustomerShippingAddressRequest); // http body (model) parameter
@@ -1186,24 +1493,36 @@ namespace CyberSource.Api
                 localVarPostBody = postCustomerShippingAddressRequest; // byte array
             }
 
+            if (logUtility.IsMaskingEnabled(logger))
+            {
+                logger.Debug($"HTTP Request Body :\n{logUtility.MaskSensitiveData(localVarPostBody.ToString())}");
+            }
+            else
+            {
+                logger.Debug($"HTTP Request Body :\n{localVarPostBody}");
+            }
+
 
             // make the HTTP request
-            IRestResponse localVarResponse = (IRestResponse) await Configuration.ApiClient.CallApiAsync(localVarPath,
+            IRestResponse localVarResponse = (IRestResponse)await Configuration.ApiClient.CallApiAsync(localVarPath,
                 Method.POST, localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarFileParams,
                 localVarPathParams, localVarHttpContentType);
 
-            int localVarStatusCode = (int) localVarResponse.StatusCode;
+            int localVarStatusCode = (int)localVarResponse.StatusCode;
 
             if (ExceptionFactory != null)
             {
                 Exception exception = ExceptionFactory("PostCustomerShippingAddress", localVarResponse);
-                if (exception != null) throw exception;
+                if (exception != null)
+                {
+                    logger.Error($"Exception : {exception.Message}");
+                    throw exception;
+                }
             }
 
             return new ApiResponse<Tmsv2customersEmbeddedDefaultShippingAddress>(localVarStatusCode,
                 localVarResponse.Headers.ToDictionary(x => x.Name, x => x.Value.ToString()),
                 (Tmsv2customersEmbeddedDefaultShippingAddress) Configuration.ApiClient.Deserialize(localVarResponse, typeof(Tmsv2customersEmbeddedDefaultShippingAddress))); // Return statement
         }
-
     }
 }

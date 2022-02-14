@@ -1,65 +1,103 @@
-﻿using System;
+﻿using NLog;
+using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Xml;
-using NLog;
-using NLog.Targets;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace AuthenticationSdk.util
 {
     public class LogUtility
     {
-        private static LogUtility _singletonLogUtility;
+        private Dictionary<string, string> sensitiveTags;
+        private Dictionary<string, string> authenticationTags;
 
-        private LogUtility(string enableLog, string logDirectory, string logFileName, string logFileMaxSize)
+        public LogUtility()
         {
-            // If user does not want logging the EnableLog property can be set to FALSE
-            if (string.Equals(enableLog, "FALSE", StringComparison.OrdinalIgnoreCase))
+            sensitiveTags = new Dictionary<string, string>();
+            authenticationTags = new Dictionary<string, string>();
+        }
+
+        /// <summary>
+        /// mutex to ensure that the operation is thread safe
+        /// </summary>
+        private static readonly object mutex = new object();
+
+        /// <summary>
+        /// check if the dictionaries have already been loaded
+        /// </summary>
+        private static bool loaded = false;
+
+        private void LoadSensitiveDataConfiguration()
+        {
+            lock(mutex)
             {
-                LogManager.DisableLogging();
+                if (loaded)
+                {
+                    return;
+                }
+
+                sensitiveTags.Clear();
+                authenticationTags.Clear();
+
+                sensitiveTags = SensitiveTags.getSensitiveTags();
+                authenticationTags = AuthenticationTags.getAuthenticationTags();
+
+                loaded = true;
+            }
+        }
+
+        public string MaskSensitiveData(string str)
+        {
+            LoadSensitiveDataConfiguration();
+
+            try
+            {
+                foreach (KeyValuePair<string, string> tag in sensitiveTags)
+                {
+                    str = Regex.Replace(str, tag.Key, tag.Value);
+                }
+            }
+            catch (Exception e)
+            {
+                throw e;
             }
 
             try
             {
-                var target = LogManager.Configuration.FindTargetByName("file") as FileTarget;
-
-                if (target != null)
+                foreach (KeyValuePair<string, string> tag in authenticationTags)
                 {
-                    // using the log path set by the merchant, if not set, using default value set in NLog.config
-                    if (!string.IsNullOrEmpty(logDirectory))
-                    {
-                        target.FileName = logDirectory + @"\" + logFileName;
-                    }
-
-                    // set the maximum allowed size of the log file
-                    if (!string.IsNullOrEmpty(logFileMaxSize))
-                    {
-                        target.ArchiveAboveSize = long.Parse(logFileMaxSize);
-                    }
-                }
-                else
-                {
-                    throw new Exception($"{Constants.ErrorPrefix} No Target with the name 'file' found in NLog.config");
+                    str = Regex.Replace(str, tag.Key, tag.Value);
                 }
             }
-            catch (NullReferenceException)
+            catch (Exception e)
             {
-                // If no nlog configuration  (NLog.config file) found
-                LogManager.DisableLogging();
+                throw e;
             }
+
+            return str;
         }
 
-        public static void InitLogConfig(string enableLog, string logDirectory, string logFileName, string logFileMaxSize)
+        public bool IsMaskingEnabled(Logger logger)
         {
-            if (!string.Equals(enableLog, "true", StringComparison.OrdinalIgnoreCase))
+            if (!(logger.Factory.Configuration?.Variables?.ContainsKey("enableMasking") ?? false))
             {
-                enableLog = "FALSE";
+                logger.Warn("NLog configuration is missing key/value pair: enableMasking. Assuming true");
+                return true;
             }
 
-            if (_singletonLogUtility == null)
+            return logger.Factory.Configuration.Variables["enableMasking"].ToString().ToLower().Contains("true");
+        }
+
+        public string ConvertDictionaryToString(Dictionary<string, string> dict)
+        {
+            var stringBuilder = new StringBuilder();
+
+            foreach (KeyValuePair<string, string> kvp in dict)
             {
-                _singletonLogUtility = new LogUtility(enableLog, logDirectory, logFileName, logFileMaxSize);
+                stringBuilder.Append($"{kvp.Key} = {kvp.Value}\n");
             }
+
+            return stringBuilder.ToString();
         }
     }
 }

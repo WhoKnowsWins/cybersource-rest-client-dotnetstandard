@@ -41,10 +41,10 @@ namespace CyberSource.Model
         /// <param name="Timezone">Timezone of the report.</param>
         /// <param name="ReportStartTime">Start time of the report.</param>
         /// <param name="ReportEndTime">End time of the report.</param>
-        /// <param name="ReportFilters">List of filters to apply.</param>
+        /// <param name="ReportFilters">ReportFilters.</param>
         /// <param name="ReportPreferences">ReportPreferences.</param>
         /// <param name="GroupName">Specifies the group name.</param>
-        public CreateAdhocReportRequest(string OrganizationId = default(string), string ReportDefinitionName = default(string), List<string> ReportFields = default(List<string>), string ReportMimeType = default(string), string ReportName = default(string), string Timezone = default(string), DateTime? ReportStartTime = default(DateTime?), DateTime? ReportEndTime = default(DateTime?), Dictionary<string, List<string>> ReportFilters = default(Dictionary<string, List<string>>), Reportingv3reportsReportPreferences ReportPreferences = default(Reportingv3reportsReportPreferences), string GroupName = default(string))
+        public CreateAdhocReportRequest(string OrganizationId = default(string), string ReportDefinitionName = default(string), List<string> ReportFields = default(List<string>), string ReportMimeType = default(string), string ReportName = default(string), string Timezone = default(string), DateTime? ReportStartTime = default(DateTime?), DateTime? ReportEndTime = default(DateTime?), Reportingv3reportsReportFilters ReportFilters = default(Reportingv3reportsReportFilters), Reportingv3reportsReportPreferences ReportPreferences = default(Reportingv3reportsReportPreferences), string GroupName = default(string))
         {
             this.OrganizationId = OrganizationId;
             this.ReportDefinitionName = ReportDefinitionName;
@@ -115,11 +115,10 @@ namespace CyberSource.Model
         public DateTime? ReportEndTime { get; set; }
 
         /// <summary>
-        /// List of filters to apply
+        /// Gets or Sets ReportFilters
         /// </summary>
-        /// <value>List of filters to apply</value>
         [DataMember(Name="reportFilters", EmitDefaultValue=false)]
-        public Dictionary<string, List<string>> ReportFilters { get; set; }
+        public Reportingv3reportsReportFilters ReportFilters { get; set; }
 
         /// <summary>
         /// Gets or Sets ReportPreferences
@@ -232,7 +231,7 @@ namespace CyberSource.Model
                 (
                     this.ReportFilters == other.ReportFilters ||
                     this.ReportFilters != null &&
-                    this.ReportFilters.SequenceEqual(other.ReportFilters)
+                    this.ReportFilters.Equals(other.ReportFilters)
                 ) && 
                 (
                     this.ReportPreferences == other.ReportPreferences ||
@@ -297,35 +296,11 @@ namespace CyberSource.Model
                 yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for OrganizationId, must match a pattern of " + regexOrganizationId, new [] { "OrganizationId" });
             }
 
-            // ReportDefinitionName (string) maxLength
-            if(this.ReportDefinitionName != null && this.ReportDefinitionName.Length >= 80)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ReportDefinitionName, length must be less than or equal to 80.", new [] { "ReportDefinitionName" });
-            }
-
-            // ReportDefinitionName (string) minLength
-            if(this.ReportDefinitionName != null && this.ReportDefinitionName.Length <= 1)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ReportDefinitionName, length must be greater than or equal to 1.", new [] { "ReportDefinitionName" });
-            }
-
             // ReportDefinitionName (string) pattern
             Regex regexReportDefinitionName = new Regex(@"[a-zA-Z0-9-]+", RegexOptions.CultureInvariant);
             if (false == regexReportDefinitionName.Match(this.ReportDefinitionName).Success)
             {
                 yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ReportDefinitionName, must match a pattern of " + regexReportDefinitionName, new [] { "ReportDefinitionName" });
-            }
-
-            // ReportName (string) maxLength
-            if(this.ReportName != null && this.ReportName.Length >= 128)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ReportName, length must be less than or equal to 128.", new [] { "ReportName" });
-            }
-
-            // ReportName (string) minLength
-            if(this.ReportName != null && this.ReportName.Length <= 1)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ReportName, length must be greater than or equal to 1.", new [] { "ReportName" });
             }
 
             // ReportName (string) pattern

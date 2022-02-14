@@ -21,6 +21,9 @@ using System.Text;
 using Newtonsoft.Json;
 using RestSharp;
 using AuthenticationSdk.core;
+using AuthenticationSdk.util;
+using System.Security.Cryptography.X509Certificates;
+using NLog;
 
 namespace CyberSource.Client
 {
@@ -55,6 +58,10 @@ namespace CyberSource.Client
         {
             Configuration = Configuration.Default;
             RestClient = new RestClient("https://apitest.cybersource.com");
+            if (logger == null)
+            {
+                logger = LogManager.GetCurrentClassLogger();
+            }
         }
 
         /// <summary>
@@ -77,9 +84,9 @@ namespace CyberSource.Client
         /// with default configuration.
         /// </summary>
         /// <param name="basePath">The base path.</param>
-        public ApiClient(String basePath = "https://apitest.cybersource.com")
+        public ApiClient(string basePath = "https://apitest.cybersource.com")
         {
-           if (String.IsNullOrEmpty(basePath))
+           if (string.IsNullOrEmpty(basePath))
                 throw new ArgumentException("basePath cannot be empty");
 
             RestClient = new RestClient(basePath);
@@ -115,14 +122,19 @@ namespace CyberSource.Client
         /// Gets or sets the file name, in which the response to be downloaded.
         /// </summary>
         /// <value>An instance of the Configuration.</value>
-        public string DownloadReponseFileName { get; set; }
+        public string DownloadResponseFileName { get; set; }
+
+        /// <summary>
+        /// Internal class logger
+        /// </summary>
+        private static Logger logger;
 
         // Creates and sets up a RestRequest prior to a call.
         private RestRequest PrepareRequest(
-            String path, RestSharp.Method method, Dictionary<String, String> queryParams, Object postBody,
-            Dictionary<String, String> headerParams, Dictionary<String, String> formParams,
-            Dictionary<String, FileParameter> fileParams, Dictionary<String, String> pathParams,
-            String contentType)
+            string path, Method method, Dictionary<string, string> queryParams, object postBody,
+            Dictionary<string, string> headerParams, Dictionary<string, string> formParams,
+            Dictionary<string, FileParameter> fileParams, Dictionary<string, string> pathParams,
+            string contentType)
         {
             //1.set in the defaultHeaders of configuration
 
@@ -200,9 +212,20 @@ namespace CyberSource.Client
 
             if (postBody != null) // http body (model or byte[]) parameter
             {
-                if (postBody.GetType() == typeof(String))
+                if (postBody.GetType() == typeof(string))
                 {
-                    request.AddParameter("application/json", postBody, ParameterType.RequestBody);
+                    if (contentType == "application/x-www-form-urlencoded")
+                    {
+                        var bodyParams = JsonConvert.DeserializeObject<Dictionary<string, string>>((string)postBody);
+                        foreach (KeyValuePair<string, string> param in bodyParams)
+                        {
+                            request.AddParameter(param.Key, param.Value, ParameterType.GetOrPost);
+                        }
+                    }
+                    else
+                    {
+                        request.AddParameter("application/json", postBody, ParameterType.RequestBody);
+                    }                    
                 }
                 else if (postBody.GetType() == typeof(byte[]))
                 {
@@ -215,10 +238,10 @@ namespace CyberSource.Client
 
         // Creates and sets up a HttpWebRequest for calls which needs response in a file format.
         private HttpWebRequest PrepareHttpWebRequest(
-            String path, RestSharp.Method method, Dictionary<String, String> queryParams, Object postBody,
-            Dictionary<String, String> headerParams, Dictionary<String, String> formParams,
-            Dictionary<String, FileParameter> fileParams, Dictionary<String, String> pathParams,
-            String contentType)
+            string path, Method method, Dictionary<string, string> queryParams, object postBody,
+            Dictionary<string, string> headerParams, Dictionary<string, string> formParams,
+            Dictionary<string, FileParameter> fileParams, Dictionary<string, string> pathParams,
+            string contentType)
         {
             // Change to path(Request Target) to be sent to Authentication SDK
             // Include Query Params in the Request target
@@ -303,15 +326,18 @@ namespace CyberSource.Client
         /// <param name="pathParams">Path parameters.</param>
         /// <param name="contentType">Content Type of the request</param>
         /// <returns>Object</returns>
-        public Object CallApi(
-            String path, RestSharp.Method method, Dictionary<String, String> queryParams, Object postBody,
-            Dictionary<String, String> headerParams, Dictionary<String, String> formParams,
-            Dictionary<String, FileParameter> fileParams, Dictionary<String, String> pathParams,
-            String contentType)
+        public object CallApi(
+            string path, Method method, Dictionary<string, string> queryParams, object postBody,
+            Dictionary<string, string> headerParams, Dictionary<string, string> formParams,
+            Dictionary<string, FileParameter> fileParams, Dictionary<string, string> pathParams,
+            string contentType)
         {
             //declared separately to handle both regular call and download file calls
             int httpResponseStatusCode;
+            IList<Parameter> httpResponseHeaders = null;
             string httpResponseData = string.Empty;
+
+            LogUtility logUtility = new LogUtility();
 
             var response = new RestResponse();
 
@@ -324,7 +350,7 @@ namespace CyberSource.Client
             }
 
             //check if the Response is to be downloaded as a file, this value to be set by the calling API class
-            if (string.IsNullOrEmpty(DownloadReponseFileName))
+            if (string.IsNullOrEmpty(DownloadResponseFileName))
             {
                 var request = PrepareRequest(
                     path, method, queryParams, postBody, headerParams, formParams, fileParams,
@@ -341,6 +367,37 @@ namespace CyberSource.Client
                 {
                     RestClient.Proxy = Configuration.Proxy;
                 }            
+                
+                // Adding Client Cert
+                if(Configuration.MerchantConfigDictionaryObj.ContainsKey("enableClientCert") && Equals(bool.Parse(Configuration.MerchantConfigDictionaryObj["enableClientCert"]), true))
+                {
+                    string clientCertDirectory = Configuration.MerchantConfigDictionaryObj["clientCertDirectory"];
+                    string clientCertFile = Configuration.MerchantConfigDictionaryObj["clientCertFile"];
+                    string clientCertPassword = Configuration.MerchantConfigDictionaryObj["clientCertPassword"];
+                    string fileName = Path.Combine(clientCertDirectory, clientCertFile);
+                    // Importing Certificates
+                    var certificate = new X509Certificate2(fileName, clientCertPassword);
+                    RestClient.ClientCertificates = new X509CertificateCollection { certificate };
+                }
+
+                // Logging Request Headers
+                var headerPrintOutput = new StringBuilder();
+                foreach (var param in request.Parameters)
+                {
+                    if (param.Type.ToString().Equals("HttpHeader"))
+                    {
+                        headerPrintOutput.Append($"{param.Name} : {param.Value}\n");
+                    }
+                }
+
+                if (logUtility.IsMaskingEnabled(logger))
+                {
+                    logger.Debug($"HTTP Request Headers :\n{logUtility.MaskSensitiveData(headerPrintOutput.ToString())}");
+                }
+                else
+                {
+                    logger.Debug($"HTTP Request Headers :\n{headerPrintOutput}");
+                }
 
                 InterceptRequest(request);
                 response = (RestResponse) RestClient.Execute(request);
@@ -351,6 +408,31 @@ namespace CyberSource.Client
                 //prepare a HttpWebRequest request object
                 var requestT = PrepareHttpWebRequest(path, method, queryParams, postBody, headerParams, formParams, fileParams, pathParams, contentType);
 
+                // Logging Request Headers
+                var headerPrintOutput = new StringBuilder();
+
+                foreach (var headerKey in requestT.Headers.AllKeys)
+                {
+                    var stringBuilder = new StringBuilder();
+                    stringBuilder.Append($"{headerKey} : ");
+
+                    foreach (var value in requestT.Headers.GetValues(headerKey))
+                    {
+                        stringBuilder.Append($"{value}, ");
+                    }
+
+                    headerPrintOutput.Append($"{stringBuilder.ToString().Remove(stringBuilder.Length - 2)}\n");
+                }
+
+                if (logUtility.IsMaskingEnabled(logger))
+                {
+                    logger.Debug($"HTTP Request Headers :\n{logUtility.MaskSensitiveData(headerPrintOutput.ToString())}");
+                }
+                else
+                {
+                    logger.Debug($"HTTP Request Headers :\n{headerPrintOutput.ToString()}");
+                }
+
                 //getting the response stream using httpwebrequest
                 HttpWebResponse responseT = (HttpWebResponse)requestT.GetResponse();
                 using (Stream responseStream = responseT.GetResponseStream())
@@ -360,7 +442,7 @@ namespace CyberSource.Client
                         //setting high timeout to accomodate large files till 2GB, need to revisit for a dynamic approach
                         responseStream.ReadTimeout = 8000000;
                         responseStream.WriteTimeout = 9000000;
-                        using (Stream fileStream = File.OpenWrite(@DownloadReponseFileName))
+                        using (Stream fileStream = File.OpenWrite(DownloadResponseFileName))
                         {
                             byte[] buffer = new byte[4096];
                             int bytesRead = responseStream.Read(buffer, 0, 4096);
@@ -371,25 +453,24 @@ namespace CyberSource.Client
                             }
                         }
                     }
-                    catch (Exception)
+                    catch (Exception err)
                     {
-                        throw new ApiException(-1, $"Error writing to path : {DownloadReponseFileName}");
+                        logger.Error($"ApiException : Error writing to path {DownloadResponseFileName}");
+                        throw new ApiException(-1, $"Error writing to path : {DownloadResponseFileName}");
                     }
                 }
 
                 //setting the generic response with response headers
                 foreach (var header in responseT.Headers)
                 {
-#pragma warning disable CS0618 // Type or member is obsolete
-                    response.Headers.Add(new Parameter(header.ToString(), String.Join(",", responseT.Headers.GetValues(header.ToString()).ToArray()), ParameterType.HttpHeader));
-#pragma warning disable CS0618 // Type or member is obsolete
+                    response.Headers.Add(new Parameter(header.ToString(), string.Join(",", responseT.Headers.GetValues(header.ToString()).ToArray()), ParameterType.HttpHeader));
                 }
 
                 //setting the generic RestResponse which is returned to the calling class
                 response.StatusCode = responseT.StatusCode;
                 if (responseT.StatusCode == HttpStatusCode.OK)
                 {
-                    response.Content = "Custom Message: Response downloaded to file " + DownloadReponseFileName;
+                    response.Content = "Custom Message: Response downloaded to file " + DownloadResponseFileName;
                 }
                 else if (responseT.StatusCode == HttpStatusCode.NotFound)
                 {
@@ -403,30 +484,41 @@ namespace CyberSource.Client
 
             Configuration.DefaultHeader.Clear();
 
+            // Logging Response Headers
             httpResponseStatusCode = (int)response.StatusCode;
-            var httpResponseHeaders = response.Headers;
+            httpResponseHeaders = response.Headers;
             httpResponseData = response.Content;
 
-            Console.WriteLine($"\n");
-            Console.WriteLine($"RESPONSE STATUS CODE: {httpResponseStatusCode}");
+            logger.Debug($"HTTP Response Status Code: {httpResponseStatusCode}");
 
-            Console.WriteLine($"\n");
-            Console.WriteLine("RESPONSE HEADERS:-");
-
+            var responseHeadersBuilder = new StringBuilder();
             foreach (var header in httpResponseHeaders)
             {
-                Console.WriteLine(header);
+                responseHeadersBuilder.Append($"{header}\n");
             }
-            Console.WriteLine($"\n");
+
+            if (logUtility.IsMaskingEnabled(logger))
+            {
+                logger.Debug($"HTTP Response Headers :\n{logUtility.MaskSensitiveData(responseHeadersBuilder.ToString())}");
+            }
+            else
+            {
+                logger.Debug($"HTTP Response Headers :\n{responseHeadersBuilder.ToString()}");
+            }
 
             if (!string.IsNullOrEmpty(httpResponseData))
             {
-                Console.WriteLine("RESPONSE BODY:-");
-                Console.WriteLine(httpResponseData);
-                Console.WriteLine($"\n");
+                if (logUtility.IsMaskingEnabled(logger))
+                {
+                    logger.Debug($"HTTP Response Body :\n{logUtility.MaskSensitiveData(httpResponseData)}");
+                }
+                else
+                {
+                    logger.Debug($"HTTP Response Body :\n{httpResponseData}");
+                }
             }
 
-            return (Object) response;
+            return response;
         }
 
         /// <summary>
@@ -442,19 +534,76 @@ namespace CyberSource.Client
         /// <param name="pathParams">Path parameters.</param>
         /// <param name="contentType">Content type.</param>
         /// <returns>The Task instance.</returns>
-        public async System.Threading.Tasks.Task<Object> CallApiAsync(
-            String path, RestSharp.Method method, Dictionary<String, String> queryParams, Object postBody,
-            Dictionary<String, String> headerParams, Dictionary<String, String> formParams,
-            Dictionary<String, FileParameter> fileParams, Dictionary<String, String> pathParams,
-            String contentType)
+        public async System.Threading.Tasks.Task<object> CallApiAsync(
+            string path, Method method, Dictionary<string, string> queryParams, object postBody,
+            Dictionary<string, string> headerParams, Dictionary<string, string> formParams,
+            Dictionary<string, FileParameter> fileParams, Dictionary<string, string> pathParams,
+            string contentType)
         {
+            LogUtility logUtility = new LogUtility();
+
             var request = PrepareRequest(
                 path, method, queryParams, postBody, headerParams, formParams, fileParams,
                 pathParams, contentType);
+
+            // Logging Request Headers
+            var headerPrintOutput = new StringBuilder();
+            foreach (var param in request.Parameters)
+            {
+                if (param.Type.ToString().Equals("HttpHeader"))
+                {
+                    headerPrintOutput.Append($"{param.Name} : {param.Value}\n");
+                }
+            }
+
+                if (logUtility.IsMaskingEnabled(logger))
+                {
+                    logger.Debug($"HTTP Request Headers :\n{logUtility.MaskSensitiveData(headerPrintOutput.ToString())}");
+                }
+                else
+                {
+                    logger.Debug($"HTTP Request Headers :\n{headerPrintOutput.ToString()}");
+                }
+
             InterceptRequest(request);
-            var response = await RestClient.ExecuteAsync(request);
+            var response = await RestClient.ExecuteTaskAsync(request);
             InterceptResponse(request, response);
-            return (Object)response;
+
+            // Logging Response Headers
+            var httpResponseStatusCode = (int)response.StatusCode;
+            var httpResponseHeaders = response.Headers;
+            var httpResponseData = response.Content;
+
+            logger.Debug($"HTTP Response Status Code: {httpResponseStatusCode}");
+
+            var responseHeadersBuilder = new StringBuilder();
+            foreach (var header in httpResponseHeaders)
+            {
+                responseHeadersBuilder.Append($"{header}\n");
+            }
+
+            if (logUtility.IsMaskingEnabled(logger))
+            {
+                logger.Debug($"HTTP Response Headers :\n{logUtility.MaskSensitiveData(responseHeadersBuilder.ToString())}");
+            }
+            else
+            {
+                logger.Debug($"HTTP Response Headers :\n{responseHeadersBuilder.ToString()}");
+            }
+
+            if (!string.IsNullOrEmpty(httpResponseData))
+            {
+                if (logUtility.IsMaskingEnabled(logger))
+                {
+                    logger.Debug($"HTTP Response Body :\n{logUtility.MaskSensitiveData(httpResponseData)}");
+                }
+                else
+                {
+                    logger.Debug($"HTTP Response Body :\n{httpResponseData}");
+                }
+            }
+
+            return response;
         }
 
         /// <summary>
@@ -529,7 +678,7 @@ namespace CyberSource.Client
         /// <returns>Object representation of the JSON string.</returns>
         public object Deserialize(IRestResponse response, Type type)
         {
-            var headers = response.Headers;
+            IList<Parameter> headers = response.Headers;
             if (type == typeof(byte[])) // return byte array
             {
                 return response.RawBytes;
@@ -539,7 +688,7 @@ namespace CyberSource.Client
             {
                 if (headers != null)
                 {
-                    var filePath = String.IsNullOrEmpty(Configuration.TempFolderPath)
+                    var filePath = string.IsNullOrEmpty(Configuration.TempFolderPath)
                         ? Path.GetTempPath()
                         : Configuration.TempFolderPath;
                     var regex = new Regex(@"Content-Disposition=.*filename=['""]?([^'""\s]+)['""]?$");
@@ -563,7 +712,7 @@ namespace CyberSource.Client
                 return DateTime.Parse(response.Content,  null, System.Globalization.DateTimeStyles.RoundtripKind);
             }
 
-            if (type == typeof(String) || type.Name.StartsWith("System.Nullable")) // return primitive type
+            if (type == typeof(string) || type.Name.StartsWith("System.Nullable")) // return primitive type
             {
                 return ConvertType(response.Content, type);
             }
@@ -575,6 +724,7 @@ namespace CyberSource.Client
             }
             catch (Exception e)
             {
+                logger.Error($"JSON Deserialization Exception : {e.Message}");
                 throw new ApiException(500, e.Message);
             }
         }
@@ -584,7 +734,7 @@ namespace CyberSource.Client
         /// </summary>
         /// <param name="obj">Object.</param>
         /// <returns>JSON string.</returns>
-        public String Serialize(object obj)
+        public string Serialize(object obj)
         {
             try
             {
@@ -592,6 +742,7 @@ namespace CyberSource.Client
             }
             catch (Exception e)
             {
+                logger.Error($"JSON Serialization Exception : {e.Message}");
                 throw new ApiException(500, e.Message);
             }
         }
@@ -603,7 +754,7 @@ namespace CyberSource.Client
         /// </summary>
         /// <param name="contentTypes">The Content-Type array to select from.</param>
         /// <returns>The Content-Type header to use.</returns>
-        public String SelectHeaderContentType(String[] contentTypes)
+        public string SelectHeaderContentType(string[] contentTypes)
         {
             if (contentTypes.Length == 0)
                 return null;
@@ -621,7 +772,7 @@ namespace CyberSource.Client
         /// </summary>
         /// <param name="accepts">The accepts array to select from.</param>
         /// <returns>The Accept header to use.</returns>
-        public String SelectHeaderAccept(String[] accepts)
+        public string SelectHeaderAccept(string[] accepts)
         {
             if (accepts.Length == 0)
                 return null;
@@ -629,7 +780,7 @@ namespace CyberSource.Client
             if (accepts.Contains("application/json", StringComparer.OrdinalIgnoreCase))
                 return "application/json";
 
-            return String.Join(",", accepts);
+            return string.Join(",", accepts);
         }
 
         /// <summary>
@@ -639,7 +790,7 @@ namespace CyberSource.Client
         /// <returns>Encoded string.</returns>
         public static string Base64Encode(string text)
         {
-            return System.Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(text));
+            return Convert.ToBase64String(Encoding.UTF8.GetBytes(text));
         }
 
         /// <summary>
@@ -686,7 +837,8 @@ namespace CyberSource.Client
 
             if (input == null)
             {
-                throw new ArgumentNullException("input");
+                logger.Error("ArgumentNullException : URL to encode is null");
+                throw new ArgumentNullException("URL to encode is null.");
             }
 
             if (input.Length <= maxLength)
@@ -700,10 +852,10 @@ namespace CyberSource.Client
             while (index < input.Length)
             {
                 int length = Math.Min(input.Length - index, maxLength);
-                string subString = input.Substring(index, length);
+                string substring = input.Substring(index, length);
 
-                sb.Append(Uri.EscapeDataString(subString));
-                index += subString.Length;
+                sb.Append(Uri.EscapeDataString(substring));
+                index += substring.Length;
             }
 
             return sb.ToString();
@@ -728,7 +880,12 @@ namespace CyberSource.Client
             }
         }
         
-        /// Calling the Authentication SDK to Generate Request Headers necessary for Authentication        
+        /// <summary>
+        /// Generate Request Authentication Headers using the Authentication SDK
+        /// </summary>
+        /// <param name="requestType">GET/POST/PUT/PATCH/DELETE</param>
+        /// <param name="requestTarget">Resource Path</param>
+        /// <param name="requestJsonData">Request Payload</param>
         public void CallAuthenticationHeaders(string requestType, string requestTarget, string requestJsonData = null)
         {
             requestTarget = Uri.EscapeUriString(requestTarget);
@@ -764,6 +921,11 @@ namespace CyberSource.Client
                 if (merchantConfig.IsPostRequest || merchantConfig.IsPutRequest || merchantConfig.IsPatchRequest)
                     authenticationHeaders.Add("Digest", httpSign.Digest);
             }
+            else if (merchantConfig.IsOAuthTokenAuthType)
+            {
+                var oAuthToken = authorize.GetOAuthToken();
+                authenticationHeaders.Add("Authorization", oAuthToken.AccessToken);
+            }
 
             if (!string.IsNullOrEmpty(Configuration.ClientId))
             {
@@ -779,17 +941,15 @@ namespace CyberSource.Client
             {
                 if (bool.Parse(merchantConfig.UseProxy))
                 {
-                    int proxyPortTest;
-
-                    if (!string.IsNullOrWhiteSpace(merchantConfig.ProxyAddress) && int.TryParse(merchantConfig.ProxyPort, out proxyPortTest)) 
+                    if (!string.IsNullOrWhiteSpace(merchantConfig.ProxyAddress) && int.TryParse(merchantConfig.ProxyPort, out int proxyPortTest))
                     {
                         WebProxy proxy = new WebProxy(merchantConfig.ProxyAddress, proxyPortTest);
-                        
-                        if (!string.IsNullOrWhiteSpace(merchantConfig.ProxyUsername) && !string.IsNullOrWhiteSpace(merchantConfig.ProxyPassword)) 
+
+                        if (!string.IsNullOrWhiteSpace(merchantConfig.ProxyUsername) && !string.IsNullOrWhiteSpace(merchantConfig.ProxyPassword))
                         {
                             proxy.Credentials = new NetworkCredential(merchantConfig.ProxyUsername, merchantConfig.ProxyPassword);
                         }
-                        
+
                         Configuration.AddWebProxy(proxy);
                     }
                 }

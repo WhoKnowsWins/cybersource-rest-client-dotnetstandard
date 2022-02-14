@@ -17,54 +17,55 @@ namespace AuthenticationSdk.core
     *============================================================================================*/
     public class MerchantConfig
     {
-        private string _propertiesSetUsing = string.Empty;
-
         public MerchantConfig(IReadOnlyDictionary<string, string> merchantConfigDictionary = null)
         {
-            Logger = LogManager.GetCurrentClassLogger();
+            var _propertiesSetUsing = string.Empty;
 
-            // MerchantConfig section inside App.Config File
-            var merchantConfigSection = (NameValueCollection)ConfigurationManager.GetSection("MerchantConfig");
+            if (Logger == null)
+            {
+                Logger = LogManager.GetCurrentClassLogger();
+            }
 
-            /*Set the properties of Merchant Config
-            If a dictionary object has been passed use that object
-            If no dictionary object is passed, that means use app.config
-            Howevere if App.Config does not contain Merchan Config, throw an exception*/
+            /*
+             * Set the properties of Merchant Config
+             * If a dictionary object has been passed use that object
+             * If no dictionary object is passed, that means use app.config
+             * However, if App.Config does not contain Merchan Config, throw an exception
+             */
             if (merchantConfigDictionary != null)
             {
+                _propertiesSetUsing = "Dictionary Object";
+
                 SetValuesUsingDictObj(merchantConfigDictionary);
             }
             else
             {
+                // MerchantConfig section inside App.Config File
+                var merchantConfigSection = (NameValueCollection)ConfigurationManager.GetSection("MerchantConfig");
+
                 if (merchantConfigSection != null)
                 {
+                    _propertiesSetUsing = "App.Config File";
+
                     SetValuesFromAppConfig(merchantConfigSection);
                 }
                 else
                 {
-                    throw new Exception($"{Constants.ErrorPrefix} Merchant Config Missing in App.Config File!");
+                    Logger.Error($"Merchant Configuration Missing in App.Config File");
+                    throw new Exception($"{Constants.ErrorPrefix} Merchant Configuration Missing in App.Config File");
                 }
             }
 
-            LogUtility.InitLogConfig(EnableLog, LogDirectory, LogFileName, LogfileMaxSize);
+            Logger.Debug("APPLICATION LOGGING START:\n");
 
-            try
-            {
-                // Logger object is ready to Log
-                Logger.Trace("\n");
-                Logger.Trace("START> =======================================");
-
-                // Logging the source of properties' values
-                Logger.Trace("Reading Merchant Configuration from " + _propertiesSetUsing);
-            }
-            catch (Exception e)
-            {
-                ExceptionUtility.Exception(e.Message, e.StackTrace);
-            }
+            // Logging the source of properties' values
+            Logger.Trace("Reading Merchant Configuration from " + _propertiesSetUsing);
 
             // Validations
             ValidateProperties();
         }
+
+        #region Class Properties
 
         public string MerchantId { get; set; }
 
@@ -75,6 +76,22 @@ namespace AuthenticationSdk.core
         public string MerchantKeyId { get; set; }
 
         public string UseMetaKey { get; set; }
+
+        public string EnableClientCert { get; set; }
+
+        public string ClientCertDirectory { get; set; }
+
+        public string ClientCertFile { get; set; }
+
+        public string ClientCertPassword { get; set; }
+
+        public string ClientId { get; set; }
+
+        public string AccessToken { get; set; }
+
+        public string RefreshToken { get; set; }
+
+        public string ClientSecret { get; set; }
 
         public string AuthenticationType { get; set; }
 
@@ -108,7 +125,7 @@ namespace AuthenticationSdk.core
 
         public string ProxyPassword { get; set; }
 
-        public Logger Logger { get; set; }
+        public static Logger Logger { get; set; }
 
         public string HostName { get; set; }
 
@@ -136,31 +153,43 @@ namespace AuthenticationSdk.core
 
         public bool IsJwtTokenAuthType { get; set; }
 
-        public static string LogAllproperties(MerchantConfig obj)
+        public bool IsOAuthTokenAuthType { get; set; }
+
+        #endregion
+
+        public void LogMerchantConfigurationProperties()
         {
-            var hiddenProperties = Constants.HideMerchantConfigProps.Split(',');
-            var merchCfgLogString = " ";
+            var hiddenProperties = Constants.HideMerchantConfigProps.Split(',')
+                                            .Select(property => property.Trim())
+                                            .Where(property => property != null && property != "")
+                                            .ToArray();
+
+            var merchCfgLogString = string.Empty;
             var merchantConfigProperties = typeof(MerchantConfig).GetProperties();
+
             foreach (var property in merchantConfigProperties)
             {
                 // If HiddenProperties Array does not contain any value of the current property being iterated
                 // It simply means if the current property is not a hidden property, only then log it
                 if (!hiddenProperties.Any(property.Name.Contains))
                 {
-                    merchCfgLogString += property.Name;
-                    merchCfgLogString += " ";
-                    merchCfgLogString += property.GetValue(obj);
-                    merchCfgLogString += ", ";
+                    var propertyValue = property.GetValue(this);
+                    if (propertyValue != null && !string.IsNullOrEmpty(propertyValue.ToString()) &&
+                        !property.Name.StartsWith("Is", StringComparison.OrdinalIgnoreCase))
+                    {
+                        merchCfgLogString += property.Name;
+                        merchCfgLogString += " = ";
+                        merchCfgLogString += propertyValue;
+                        merchCfgLogString += "\n";
+                    }
                 }
             }
 
-            return merchCfgLogString;
+            Logger.Debug($"Merchant Configuration :\n{merchCfgLogString}");
         }
 
         private void SetValuesFromAppConfig(NameValueCollection merchantConfigSection)
         {
-            _propertiesSetUsing = "App.Config File";
-
             MerchantId = merchantConfigSection["merchantID"];
             PortfolioId = merchantConfigSection["portfolioID"];
             MerchantSecretKey = merchantConfigSection["merchantsecretKey"];
@@ -170,12 +199,14 @@ namespace AuthenticationSdk.core
             KeyDirectory = merchantConfigSection["keysDirectory"];
             KeyfileName = merchantConfigSection["keyFilename"];
             RunEnvironment = merchantConfigSection["runEnvironment"];
+            EnableClientCert = merchantConfigSection["enableClientCert"];
+            ClientCertDirectory = merchantConfigSection["clientCertDirectory"];
+            ClientCertFile = merchantConfigSection["clientCertFile"];
+            ClientCertPassword = merchantConfigSection["clientCertPassword"];
+            ClientId = merchantConfigSection["clientId"];
+            ClientSecret = merchantConfigSection["clientSecret"];
             KeyAlias = merchantConfigSection["keyAlias"];
             KeyPass = merchantConfigSection["keyPass"];
-            EnableLog = merchantConfigSection["enableLog"];
-            LogDirectory = merchantConfigSection["logDirectory"];
-            LogfileMaxSize = merchantConfigSection["logFileMaxSize"];
-            LogFileName = merchantConfigSection["logFileName"];
             TimeOut = merchantConfigSection["timeout"];
             UseProxy = merchantConfigSection["useProxy"];
             ProxyAddress = merchantConfigSection["proxyAddress"];
@@ -192,27 +223,29 @@ namespace AuthenticationSdk.core
             {
                 if (merchantConfigDictionary != null)
                 {
-                    _propertiesSetUsing = "Dictionary Object";
-
                     // MANDATORY KEYS
-                    key = "merchantID";
-                    MerchantId = merchantConfigDictionary[key];
                     key = "runEnvironment";
                     RunEnvironment = merchantConfigDictionary[key];
                     key = "authenticationType";
                     AuthenticationType = merchantConfigDictionary[key];
+
                     key = "useMetaKey";
-                    UseMetaKey = merchantConfigDictionary[key];
-                    if(string.IsNullOrEmpty(UseMetaKey))
+                    UseMetaKey = "false";
+                    if (merchantConfigDictionary.ContainsKey(key))
                     {
-                        UseMetaKey = "false";
+                        UseMetaKey = merchantConfigDictionary[key];
+                        if (string.IsNullOrEmpty(UseMetaKey))
+                        {
+                            UseMetaKey = "false";
+                        }
                     }
 
-                    Enumerations.AuthenticationType authTypeInput;
-                    Enum.TryParse(AuthenticationType.ToUpper(), out authTypeInput);
+                    Enum.TryParse(AuthenticationType.ToUpper(), out Enumerations.AuthenticationType authTypeInput);
 
                     if (Equals(authTypeInput, Enumerations.AuthenticationType.HTTP_SIGNATURE))
                     {
+                        key = "merchantID";
+                        MerchantId = merchantConfigDictionary[key];
                         key = "merchantsecretKey";
                         MerchantSecretKey = merchantConfigDictionary[key];
                         key = "merchantKeyId";
@@ -223,9 +256,9 @@ namespace AuthenticationSdk.core
                     {
                         key = "portfolioID";
                         PortfolioId = merchantConfigDictionary[key];
-                        if(Equals(PortfolioId, string.Empty))
+                        if (Equals(PortfolioId, string.Empty))
                         {
-                            throw new KeyNotFoundException();
+                            throw new KeyNotFoundException("KeyNotFoundException : Key 'portfolioID' not found in configuration. Portfolio ID is mandatory when useMetaKey is true");
                         }
                     }
 
@@ -233,6 +266,8 @@ namespace AuthenticationSdk.core
                     // only if the key is passed read the value, otherwise use default / null values
                     if (Equals(authTypeInput, Enumerations.AuthenticationType.JWT))
                     {
+                        key = "merchantID";
+                        MerchantId = merchantConfigDictionary[key];
                         if (merchantConfigDictionary.ContainsKey("keyAlias"))
                         {
                             KeyAlias = merchantConfigDictionary["keyAlias"];
@@ -254,24 +289,94 @@ namespace AuthenticationSdk.core
                         }
                     }
 
-                    if (merchantConfigDictionary.ContainsKey("enableLog"))
+                    if (Equals(authTypeInput, Enumerations.AuthenticationType.OAUTH))
                     {
-                        EnableLog = merchantConfigDictionary["enableLog"];
+                        IsOAuthTokenAuthType = true;
+                        key = "accessToken";
+                        if (merchantConfigDictionary.ContainsKey(key) && !string.IsNullOrEmpty(merchantConfigDictionary[key]))
+                        {
+                            AccessToken = merchantConfigDictionary[key];
+                        }
+                        else
+                        {
+                            throw new KeyNotFoundException("KeyNotFoundException : Key 'accessToken' not found in configuration. Access Token is mandatory when Authentication Type is set to OAuth");
+                        }
+
+                        key = "refreshToken";
+                        if (merchantConfigDictionary.ContainsKey(key) && !string.IsNullOrEmpty(merchantConfigDictionary[key]))
+                        {
+                            RefreshToken = merchantConfigDictionary[key];
+                        }
+                        else
+                        {
+                            throw new KeyNotFoundException("KeyNotFoundException : Key 'refreshToken' not found in configuration. Refresh Token is mandatory when Authentication Type is set to OAuth");
+                        }
                     }
 
-                    if (merchantConfigDictionary.ContainsKey("logDirectory"))
+                    if (Equals(authTypeInput, Enumerations.AuthenticationType.MUTUAL_AUTH))
                     {
-                        LogDirectory = merchantConfigDictionary["logDirectory"];
+                        key = "clientId";
+                        if (merchantConfigDictionary.ContainsKey(key) && !string.IsNullOrEmpty(merchantConfigDictionary[key]))
+                        {
+                            ClientId = merchantConfigDictionary[key];
+                        }
+                        else
+                        {
+                            throw new KeyNotFoundException("KeyNotFoundException : Key 'clientId' not found in configuration. Client ID is mandatory when Authentication Type is set to Mutual Auth");
+                        }
+
+                        key = "clientSecret";
+                        if (merchantConfigDictionary.ContainsKey(key) && !string.IsNullOrEmpty(merchantConfigDictionary[key]))
+                        {
+                            ClientSecret = merchantConfigDictionary[key];
+                        }
+                        else
+                        {
+                            throw new KeyNotFoundException("KeyNotFoundException : Key 'clientSecret' not found in configuration. Client Secret is mandatory when Authentication Type is set to Mutual Auth");
+                        }
                     }
 
-                    if (merchantConfigDictionary.ContainsKey("logFileMaxSize"))
+                    key = "enableClientCert";
+                    if (merchantConfigDictionary.ContainsKey(key) && !string.IsNullOrEmpty(merchantConfigDictionary[key]))
                     {
-                        LogfileMaxSize = merchantConfigDictionary["logFileMaxSize"];
+                        EnableClientCert = merchantConfigDictionary[key];
+                    }
+                    else
+                    {
+                        EnableClientCert = "false";
                     }
 
-                    if (merchantConfigDictionary.ContainsKey("logFileName"))
+                    if (Equals(bool.Parse(EnableClientCert.ToString()), true))
                     {
-                        LogFileName = merchantConfigDictionary["logFileName"];
+                        key = "clientCertFile";
+                        if (merchantConfigDictionary.ContainsKey(key) && !string.IsNullOrEmpty(merchantConfigDictionary[key]))
+                        {
+                            ClientCertFile = merchantConfigDictionary[key];
+                        }
+                        else
+                        {
+                            throw new KeyNotFoundException("KeyNotFoundException : Key 'clientCertFile' not found in configuration. Client Certificate File is mandatory when enableClientCert is true");
+                        }
+
+                        key = "clientCertPassword";
+                        if (merchantConfigDictionary.ContainsKey(key) && !string.IsNullOrEmpty(merchantConfigDictionary[key]))
+                        {
+                            ClientCertPassword = merchantConfigDictionary[key];
+                        }
+                        else
+                        {
+                            throw new KeyNotFoundException("KeyNotFoundException : Key 'clientCertPassword' not found in configuration. Client Certificate Password is mandatory when enableClientCert is true");
+                        }
+
+                        key = "clientCertDirectory";
+                        if (merchantConfigDictionary.ContainsKey(key) && !string.IsNullOrEmpty(merchantConfigDictionary[key]))
+                        {
+                            ClientCertDirectory = merchantConfigDictionary[key];
+                        }
+                        else
+                        {
+                            throw new KeyNotFoundException("KeyNotFoundException : Key 'clientCertDirectory' not found in configuration. Client Certificate Directory is mandatory when enableClientCert is true");
+                        }
                     }
 
                     if (merchantConfigDictionary.ContainsKey("timeout"))
@@ -305,21 +410,15 @@ namespace AuthenticationSdk.core
                     }
                 }
             }
-            catch (KeyNotFoundException)
+            catch (KeyNotFoundException err)
             {
-                throw new Exception(
-                    $"{Constants.ErrorPrefix} Mandatory Key ({key}) Missing in the Configuration Dictionary Object Passed to the instance of MerchantConfig");
+                Logger.Error($"{err.Message}");
+                throw new Exception($"{Constants.ErrorPrefix} {err.Message}");
             }
         }
 
         private void ValidateProperties()
         {
-            // VALIDATIONS COMMON FOR BOTH AUTH MECH.
-            if (string.IsNullOrEmpty(MerchantId))
-            {
-                throw new Exception($"{Constants.ErrorPrefix} Merchant Config field - MerchantID is Mandatory");
-            }
-
             // Validating and setting up Authentication type
             Enumerations.ValidateAuthenticationType(AuthenticationType);
 
@@ -334,57 +433,41 @@ namespace AuthenticationSdk.core
 
             if (string.IsNullOrEmpty(TimeOut))
             {
-                TimeOut = string.Empty;   // In Milllisec
+                TimeOut = string.Empty;   // In Millisec
             }
 
             // setting up hostname based on the run environment value
             if (string.IsNullOrEmpty(RunEnvironment))
             {
+                Logger.Error("Run Environment cannot be null or empty");
                 throw new Exception($"{Constants.ErrorPrefix} Merchant Config field - RunEnvironment is Mandatory");
             }
+            else if (Constants.OldRunEnvironmentConstants.Contains(RunEnvironment.ToUpper()))
+            {
+                throw new Exception($"{Constants.DeprecationPrefix} The value \"{RunEnvironment}\" for this field `RunEnvironment` has been deprecated and will not be used anymore.\n\nPlease refer to the README file [ https://github.com/CyberSource/cybersource-rest-samples-csharp/blob/master/README.md ] for information about the new values that are accepted.");
+            }
 
-            var RunEnvironmentTester = RunEnvironment.ToUpper();
-
-            if (RunEnvironmentTester.Equals(Constants.CybsSandboxRunEnv.ToUpper()))
-            {
-                HostName = Constants.CybsSandboxHostName;
-            }
-            else if (RunEnvironmentTester.Equals(Constants.CybsProdRunEnv.ToUpper()))
-            {
-                HostName = Constants.CybsProdHostName;
-            }
-            else if (RunEnvironmentTester.Equals(Constants.BoASandboxRunEnv.ToUpper()))
-            {
-                HostName = Constants.BoASandboxHostName;
-            }
-            else if (RunEnvironmentTester.Equals(Constants.BoAProdRunEnv.ToUpper()))
-            {
-                HostName = Constants.BoAProdHostName;
-            }
-            else if (RunEnvironmentTester.Equals(Constants.IDCSandboxRunEnv.ToUpper()))
-            {
-                HostName = Constants.IDCSandboxHostName;
-            }
-            else if (RunEnvironmentTester.Equals(Constants.IDCProdRunEnv.ToUpper()))
-            {
-                HostName = Constants.IDCProdHostName;
-            }
-            else
-            {
-                HostName = RunEnvironment.ToLower();
-            }
+            HostName = RunEnvironment.ToLower();
 
             // AUTHENTICATION MECHANISM SPECIFIC CHECKS
             // 1. FOR HTTP SIGNATURE
             if (IsHttpSignAuthType)
             {
+                if (string.IsNullOrEmpty(MerchantId))
+                {
+                    Logger.Error("Merchant ID cannot be null or empty");
+                    throw new Exception($"{Constants.ErrorPrefix} Merchant Config field - MerchantID is Mandatory");
+                }
+
                 if (string.IsNullOrEmpty(MerchantKeyId))
                 {
+                    Logger.Error("Merchant Key ID cannot be null or empty");
                     throw new Exception($"{Constants.ErrorPrefix} Merchant Config field - MerchantKeyId is Mandatory");
                 }
 
                 if (string.IsNullOrEmpty(MerchantSecretKey))
                 {
+                    Logger.Error("Merchant Secret Key cannot be null or empty");
                     throw new Exception($"{Constants.ErrorPrefix} Merchant Config field - MerchantSecretKey is Mandatory");
                 }
             }
@@ -392,33 +475,44 @@ namespace AuthenticationSdk.core
             // 2. FOR JWT TOKEN
             else if (IsJwtTokenAuthType)
             {
+                if (string.IsNullOrEmpty(MerchantId))
+                {
+                    Logger.Error("Merchant ID cannot be null or empty");
+                    throw new Exception($"{Constants.ErrorPrefix} Merchant Config field - MerchantID is Mandatory");
+                }
+
                 if (string.IsNullOrEmpty(KeyAlias))
                 {
                     KeyAlias = MerchantId;
+                    Logger.Warn("Key Alias not provided. Assigning the value of Merchant ID");
                     throw new Exception($"{Constants.WarningPrefix} KeyAlias not provided. Assigning the value of: [MerchantID]");
                 }
 
                 if (!string.Equals(KeyAlias, MerchantId))
                 {
                     KeyAlias = MerchantId;
+                    Logger.Warn("Key Alias value provided is incorrect. Assigning the value of Merchant ID");
                     throw new Exception($"{Constants.WarningPrefix} Incorrect value of KeyAlias provided. Assigning the value of: [MerchantID]");
                 }
 
                 if (string.IsNullOrEmpty(KeyPass))
                 {
                     KeyPass = MerchantId;
+                    Logger.Warn("Key Password not provided. Assigning the value of Merchant ID");
                     throw new Exception($"{Constants.WarningPrefix} KeyPassword not provided. Assigning the value of: [MerchantID]");
                 }
 
                 if (string.IsNullOrEmpty(KeyDirectory))
                 {
                     KeyDirectory = Constants.P12FileDirectory;
+                    Logger.Warn($"Keys Directory not provided. Using Default Path: {KeyDirectory}");
                     throw new Exception($"{Constants.WarningPrefix} KeysDirectory not provided. Using Default Path: {KeyDirectory}");
                 }
 
                 if (string.IsNullOrEmpty(KeyfileName))
                 {
                     KeyfileName = MerchantId;
+                    Logger.Warn("Key Filename not provided. Assigning the value of Merchant ID");
                     throw new Exception($"{Constants.WarningPrefix} KeyfileName not provided. Assigning the value of: [MerchantId]");
                 }
 

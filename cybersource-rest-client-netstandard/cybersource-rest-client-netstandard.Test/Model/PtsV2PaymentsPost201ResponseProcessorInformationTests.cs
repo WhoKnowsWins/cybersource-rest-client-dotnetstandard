@@ -81,6 +81,14 @@ namespace CyberSource.Test
             // TODO unit test for the property 'ApprovalCode'
         }
         /// <summary>
+        /// Test the property 'CardReferenceData'
+        /// </summary>
+        [Test]
+        public void CardReferenceDataTest()
+        {
+            // TODO unit test for the property 'CardReferenceData'
+        }
+        /// <summary>
         /// Test the property 'TransactionId'
         /// </summary>
         [Test]
@@ -95,14 +103,6 @@ namespace CyberSource.Test
         public void NetworkTransactionIdTest()
         {
             // TODO unit test for the property 'NetworkTransactionId'
-        }
-        /// <summary>
-        /// Test the property 'ProviderTransactionId'
-        /// </summary>
-        [Test]
-        public void ProviderTransactionIdTest()
-        {
-            // TODO unit test for the property 'ProviderTransactionId'
         }
         /// <summary>
         /// Test the property 'ResponseCode'
@@ -279,6 +279,30 @@ namespace CyberSource.Test
         public void MerchantNumberTest()
         {
             // TODO unit test for the property 'MerchantNumber'
+        }
+        /// <summary>
+        /// Test the property 'RetrievalReferenceNumber'
+        /// </summary>
+        [Test]
+        public void RetrievalReferenceNumberTest()
+        {
+            // TODO unit test for the property 'RetrievalReferenceNumber'
+        }
+        /// <summary>
+        /// Test the property 'PaymentUrl'
+        /// </summary>
+        [Test]
+        public void PaymentUrlTest()
+        {
+            // TODO unit test for the property 'PaymentUrl'
+        }
+        /// <summary>
+        /// Test the property 'CompleteUrl'
+        /// </summary>
+        [Test]
+        public void CompleteUrlTest()
+        {
+            // TODO unit test for the property 'CompleteUrl'
         }
 
     }

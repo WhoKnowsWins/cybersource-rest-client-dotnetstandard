@@ -73,6 +73,14 @@ namespace CyberSource.Test
             // TODO unit test for the property 'MerchantDescriptor'
         }
         /// <summary>
+        /// Test the property 'DomainName'
+        /// </summary>
+        [Test]
+        public void DomainNameTest()
+        {
+            // TODO unit test for the property 'DomainName'
+        }
+        /// <summary>
         /// Test the property 'SalesOrganizationId'
         /// </summary>
         [Test]
@@ -135,6 +143,30 @@ namespace CyberSource.Test
         public void ServiceFeeDescriptorTest()
         {
             // TODO unit test for the property 'ServiceFeeDescriptor'
+        }
+        /// <summary>
+        /// Test the property 'CancelUrl'
+        /// </summary>
+        [Test]
+        public void CancelUrlTest()
+        {
+            // TODO unit test for the property 'CancelUrl'
+        }
+        /// <summary>
+        /// Test the property 'SuccessUrl'
+        /// </summary>
+        [Test]
+        public void SuccessUrlTest()
+        {
+            // TODO unit test for the property 'SuccessUrl'
+        }
+        /// <summary>
+        /// Test the property 'FailureUrl'
+        /// </summary>
+        [Test]
+        public void FailureUrlTest()
+        {
+            // TODO unit test for the property 'FailureUrl'
         }
         /// <summary>
         /// Test the property 'MerchantName'

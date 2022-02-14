@@ -39,7 +39,7 @@ namespace CyberSource.Model
         /// <param name="AlternateAuthenticationData">Data that documents and supports a specific authentication process. .</param>
         /// <param name="AlternateAuthenticationDate">Date and time in UTC of the cardholder authentication. Format: YYYYMMDDHHMM .</param>
         /// <param name="AlternateAuthenticationMethod">Mechanism used by the cardholder to authenticate to the 3D Secure requestor. Possible values: - &#x60;01&#x60;: No authentication occurred - &#x60;02&#x60;: Login using merchant system credentials - &#x60;03&#x60;: Login using Federated ID - &#x60;04&#x60;: Login using issuer credentials - &#x60;05&#x60;: Login using third-party authenticator - &#x60;06&#x60;: Login using FIDO Authenticator .</param>
-        /// <param name="AuthenticationDate">The date/time of the authentication at the 3DS servers. RISK update authorization service in auth request payload with value returned in &#x60;consumerAuthenticationInformation.alternateAuthenticationData&#x60; if merchant calls via CYBS or field can be provided by merchant in authorization request if calling an external 3DS provider. .</param>
+        /// <param name="AuthenticationDate">The date/time of the authentication at the 3DS servers. RISK update authorization service in auth request payload with value returned in &#x60;consumerAuthenticationInformation.alternateAuthenticationData&#x60; if merchant calls via CYBS or field can be provided by merchant in authorization request if calling an external 3DS provider.  This field is supported for Cartes Bancaires Fast&#39;R transactions on Credit Mutuel-CIC. Format: YYYYMMDDHHMMSS .</param>
         /// <param name="AuthenticationTransactionId">Payer authentication transaction identifier passed to link the check enrollment and validate authentication messages. **Note**: Required for Standard integration for enroll service. Required for Hybrid integration for validate service. .</param>
         /// <param name="ChallengeCancelCode">An indicator as to why the transaction was canceled. Possible Values:  - &#x60;01&#x60;: Cardholder selected Cancel. - &#x60;02&#x60;: Reserved for future EMVCo use (values invalid until defined by EMVCo). - &#x60;03&#x60;: Transaction Timed Out—Decoupled Authentication - &#x60;04&#x60;: Transaction timed out at ACS—other timeouts - &#x60;05&#x60;: Transaction Timed out at ACS - First CReq not received by ACS - &#x60;06&#x60;: Transaction Error - &#x60;07&#x60;: Unknown - &#x60;08&#x60;: Transaction Timed Out at SDK .</param>
         /// <param name="ChallengeCode">Possible values: - &#x60;01&#x60;: No preference - &#x60;02&#x60;: No challenge request - &#x60;03&#x60;: Challenge requested (3D Secure requestor preference) - &#x60;04&#x60;: Challenge requested (mandate) - &#x60;05&#x60;: No challenge requested (transactional risk analysis is already performed) - &#x60;06&#x60;: No challenge requested (Data share only) - &#x60;07&#x60;: No challenge requested (strong consumer authentication is already performed) - &#x60;08&#x60;: No challenge requested (utilize whitelist exemption if no challenge required) - &#x60;09&#x60;: Challenge requested (whitelist prompt requested if challenge required) **Note** This field will default to &#x60;01&#x60; on merchant configuration and can be overridden by the merchant. EMV 3D Secure version 2.1.0 supports values &#x60;01-04&#x60;. Version 2.2.0 supports values &#x60;01-09&#x60;.  For details, see &#x60;pa_challenge_code&#x60; field description in [CyberSource Payer Authentication Using the SCMP API.] (https://apps.cybersource.com/library/documentation/dev_guides/Payer_Authentication_SCMP_API/html) .</param>
@@ -159,9 +159,9 @@ namespace CyberSource.Model
         public string AlternateAuthenticationMethod { get; set; }
 
         /// <summary>
-        /// The date/time of the authentication at the 3DS servers. RISK update authorization service in auth request payload with value returned in &#x60;consumerAuthenticationInformation.alternateAuthenticationData&#x60; if merchant calls via CYBS or field can be provided by merchant in authorization request if calling an external 3DS provider. 
+        /// The date/time of the authentication at the 3DS servers. RISK update authorization service in auth request payload with value returned in &#x60;consumerAuthenticationInformation.alternateAuthenticationData&#x60; if merchant calls via CYBS or field can be provided by merchant in authorization request if calling an external 3DS provider.  This field is supported for Cartes Bancaires Fast&#39;R transactions on Credit Mutuel-CIC. Format: YYYYMMDDHHMMSS 
         /// </summary>
-        /// <value>The date/time of the authentication at the 3DS servers. RISK update authorization service in auth request payload with value returned in &#x60;consumerAuthenticationInformation.alternateAuthenticationData&#x60; if merchant calls via CYBS or field can be provided by merchant in authorization request if calling an external 3DS provider. </value>
+        /// <value>The date/time of the authentication at the 3DS servers. RISK update authorization service in auth request payload with value returned in &#x60;consumerAuthenticationInformation.alternateAuthenticationData&#x60; if merchant calls via CYBS or field can be provided by merchant in authorization request if calling an external 3DS provider.  This field is supported for Cartes Bancaires Fast&#39;R transactions on Credit Mutuel-CIC. Format: YYYYMMDDHHMMSS </value>
         [DataMember(Name="authenticationDate", EmitDefaultValue=false)]
         public string AuthenticationDate { get; set; }
 
@@ -784,186 +784,6 @@ namespace CyberSource.Model
         /// <returns>Validation Result</returns>
         IEnumerable<System.ComponentModel.DataAnnotations.ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
         {
-            // AuthenticationType (string) maxLength
-            if(this.AuthenticationType != null && this.AuthenticationType.Length >= 2)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for AuthenticationType, length must be less than or equal to 2.", new [] { "AuthenticationType" });
-            }
-
-            // AcsWindowSize (string) maxLength
-            if(this.AcsWindowSize != null && this.AcsWindowSize.Length >= 2)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for AcsWindowSize, length must be less than or equal to 2.", new [] { "AcsWindowSize" });
-            }
-
-            // AlternateAuthenticationData (string) maxLength
-            if(this.AlternateAuthenticationData != null && this.AlternateAuthenticationData.Length >= 2048)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for AlternateAuthenticationData, length must be less than or equal to 2048.", new [] { "AlternateAuthenticationData" });
-            }
-
-            // AlternateAuthenticationDate (string) maxLength
-            if(this.AlternateAuthenticationDate != null && this.AlternateAuthenticationDate.Length >= 14)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for AlternateAuthenticationDate, length must be less than or equal to 14.", new [] { "AlternateAuthenticationDate" });
-            }
-
-            // AuthenticationDate (string) maxLength
-            if(this.AuthenticationDate != null && this.AuthenticationDate.Length >= 14)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for AuthenticationDate, length must be less than or equal to 14.", new [] { "AuthenticationDate" });
-            }
-
-            // AuthenticationTransactionId (string) maxLength
-            if(this.AuthenticationTransactionId != null && this.AuthenticationTransactionId.Length >= 20)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for AuthenticationTransactionId, length must be less than or equal to 20.", new [] { "AuthenticationTransactionId" });
-            }
-
-            // ChallengeCancelCode (string) maxLength
-            if(this.ChallengeCancelCode != null && this.ChallengeCancelCode.Length >= 2)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ChallengeCancelCode, length must be less than or equal to 2.", new [] { "ChallengeCancelCode" });
-            }
-
-            // ChallengeStatus (string) maxLength
-            if(this.ChallengeStatus != null && this.ChallengeStatus.Length >= 2)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ChallengeStatus, length must be less than or equal to 2.", new [] { "ChallengeStatus" });
-            }
-
-            // CustomerCardAlias (string) maxLength
-            if(this.CustomerCardAlias != null && this.CustomerCardAlias.Length >= 128)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for CustomerCardAlias, length must be less than or equal to 128.", new [] { "CustomerCardAlias" });
-            }
-
-            // DecoupledAuthenticationIndicator (string) maxLength
-            if(this.DecoupledAuthenticationIndicator != null && this.DecoupledAuthenticationIndicator.Length >= 1)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for DecoupledAuthenticationIndicator, length must be less than or equal to 1.", new [] { "DecoupledAuthenticationIndicator" });
-            }
-
-            // DecoupledAuthenticationMaxTime (string) maxLength
-            if(this.DecoupledAuthenticationMaxTime != null && this.DecoupledAuthenticationMaxTime.Length >= 5)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for DecoupledAuthenticationMaxTime, length must be less than or equal to 5.", new [] { "DecoupledAuthenticationMaxTime" });
-            }
-
-            // DeviceChannel (string) maxLength
-            if(this.DeviceChannel != null && this.DeviceChannel.Length >= 10)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for DeviceChannel, length must be less than or equal to 10.", new [] { "DeviceChannel" });
-            }
-
-            // MerchantFraudRate (string) maxLength
-            if(this.MerchantFraudRate != null && this.MerchantFraudRate.Length >= 2)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for MerchantFraudRate, length must be less than or equal to 2.", new [] { "MerchantFraudRate" });
-            }
-
-            // MarketingSource (string) maxLength
-            if(this.MarketingSource != null && this.MarketingSource.Length >= 40)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for MarketingSource, length must be less than or equal to 40.", new [] { "MarketingSource" });
-            }
-
-            // Mcc (string) maxLength
-            if(this.Mcc != null && this.Mcc.Length >= 4)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for Mcc, length must be less than or equal to 4.", new [] { "Mcc" });
-            }
-
-            // NpaCode (string) maxLength
-            if(this.NpaCode != null && this.NpaCode.Length >= 2)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for NpaCode, length must be less than or equal to 2.", new [] { "NpaCode" });
-            }
-
-            // OverrideCountryCode (string) maxLength
-            if(this.OverrideCountryCode != null && this.OverrideCountryCode.Length >= 2)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for OverrideCountryCode, length must be less than or equal to 2.", new [] { "OverrideCountryCode" });
-            }
-
-            // PriorAuthenticationData (string) maxLength
-            if(this.PriorAuthenticationData != null && this.PriorAuthenticationData.Length >= 2048)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for PriorAuthenticationData, length must be less than or equal to 2048.", new [] { "PriorAuthenticationData" });
-            }
-
-            // PriorAuthenticationMethod (string) maxLength
-            if(this.PriorAuthenticationMethod != null && this.PriorAuthenticationMethod.Length >= 2)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for PriorAuthenticationMethod, length must be less than or equal to 2.", new [] { "PriorAuthenticationMethod" });
-            }
-
-            // PriorAuthenticationReferenceId (string) maxLength
-            if(this.PriorAuthenticationReferenceId != null && this.PriorAuthenticationReferenceId.Length >= 36)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for PriorAuthenticationReferenceId, length must be less than or equal to 36.", new [] { "PriorAuthenticationReferenceId" });
-            }
-
-            // PriorAuthenticationTime (string) maxLength
-            if(this.PriorAuthenticationTime != null && this.PriorAuthenticationTime.Length >= 12)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for PriorAuthenticationTime, length must be less than or equal to 12.", new [] { "PriorAuthenticationTime" });
-            }
-
-            // ProductCode (string) maxLength
-            if(this.ProductCode != null && this.ProductCode.Length >= 3)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ProductCode, length must be less than or equal to 3.", new [] { "ProductCode" });
-            }
-
-            // ReturnUrl (string) maxLength
-            if(this.ReturnUrl != null && this.ReturnUrl.Length >= 2048)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ReturnUrl, length must be less than or equal to 2048.", new [] { "ReturnUrl" });
-            }
-
-            // RequestorId (string) maxLength
-            if(this.RequestorId != null && this.RequestorId.Length >= 35)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for RequestorId, length must be less than or equal to 35.", new [] { "RequestorId" });
-            }
-
-            // RequestorInitiatedAuthenticationIndicator (string) maxLength
-            if(this.RequestorInitiatedAuthenticationIndicator != null && this.RequestorInitiatedAuthenticationIndicator.Length >= 2)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for RequestorInitiatedAuthenticationIndicator, length must be less than or equal to 2.", new [] { "RequestorInitiatedAuthenticationIndicator" });
-            }
-
-            // RequestorName (string) maxLength
-            if(this.RequestorName != null && this.RequestorName.Length >= 40)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for RequestorName, length must be less than or equal to 40.", new [] { "RequestorName" });
-            }
-
-            // ReferenceId (string) maxLength
-            if(this.ReferenceId != null && this.ReferenceId.Length >= 50)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ReferenceId, length must be less than or equal to 50.", new [] { "ReferenceId" });
-            }
-
-            // SdkMaxTimeout (string) maxLength
-            if(this.SdkMaxTimeout != null && this.SdkMaxTimeout.Length >= 2)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for SdkMaxTimeout, length must be less than or equal to 2.", new [] { "SdkMaxTimeout" });
-            }
-
-            // SecureCorporatePaymentIndicator (string) maxLength
-            if(this.SecureCorporatePaymentIndicator != null && this.SecureCorporatePaymentIndicator.Length >= 1)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for SecureCorporatePaymentIndicator, length must be less than or equal to 1.", new [] { "SecureCorporatePaymentIndicator" });
-            }
-
-            // WhiteListStatus (string) maxLength
-            if(this.WhiteListStatus != null && this.WhiteListStatus.Length >= 1)
-            {
-                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for WhiteListStatus, length must be less than or equal to 1.", new [] { "WhiteListStatus" });
-            }
-
             yield break;
         }
     }
