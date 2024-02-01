@@ -121,6 +121,22 @@ namespace CyberSource.Test
             // TODO unit test for the property 'ReturnsAccepted'
         }
         /// <summary>
+        /// Test the property 'IsCryptocurrencyPurchase'
+        /// </summary>
+        [Test]
+        public void IsCryptocurrencyPurchaseTest()
+        {
+            // TODO unit test for the property 'IsCryptocurrencyPurchase'
+        }
+        /// <summary>
+        /// Test the property 'CutoffDateTime'
+        /// </summary>
+        [Test]
+        public void CutoffDateTimeTest()
+        {
+            // TODO unit test for the property 'CutoffDateTime'
+        }
+        /// <summary>
         /// Test the property 'PreOrder'
         /// </summary>
         [Test]

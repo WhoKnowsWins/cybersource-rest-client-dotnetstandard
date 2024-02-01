@@ -97,20 +97,20 @@ namespace CyberSource.Test
             // TODO unit test for the property 'MerchantId'
         }
         /// <summary>
-        /// Test the property 'Status'
-        /// </summary>
-        [Test]
-        public void StatusTest()
-        {
-            // TODO unit test for the property 'Status'
-        }
-        /// <summary>
         /// Test the property 'SubmitTimeUTC'
         /// </summary>
         [Test]
         public void SubmitTimeUTCTest()
         {
             // TODO unit test for the property 'SubmitTimeUTC'
+        }
+        /// <summary>
+        /// Test the property 'Status'
+        /// </summary>
+        [Test]
+        public void StatusTest()
+        {
+            // TODO unit test for the property 'Status'
         }
         /// <summary>
         /// Test the property 'ApplicationInformation'
@@ -217,6 +217,22 @@ namespace CyberSource.Test
             // TODO unit test for the property 'PaymentInformation'
         }
         /// <summary>
+        /// Test the property 'PaymentInsightsInformation'
+        /// </summary>
+        [Test]
+        public void PaymentInsightsInformationTest()
+        {
+            // TODO unit test for the property 'PaymentInsightsInformation'
+        }
+        /// <summary>
+        /// Test the property 'PayoutOptions'
+        /// </summary>
+        [Test]
+        public void PayoutOptionsTest()
+        {
+            // TODO unit test for the property 'PayoutOptions'
+        }
+        /// <summary>
         /// Test the property 'ProcessingInformation'
         /// </summary>
         [Test]
@@ -255,6 +271,14 @@ namespace CyberSource.Test
         public void SenderInformationTest()
         {
             // TODO unit test for the property 'SenderInformation'
+        }
+        /// <summary>
+        /// Test the property 'TokenInformation'
+        /// </summary>
+        [Test]
+        public void TokenInformationTest()
+        {
+            // TODO unit test for the property 'TokenInformation'
         }
         /// <summary>
         /// Test the property 'Links'

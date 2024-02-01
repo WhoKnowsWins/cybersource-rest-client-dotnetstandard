@@ -89,12 +89,44 @@ namespace CyberSource.Test
             // TODO unit test for the property 'Card'
         }
         /// <summary>
+        /// Test the property 'Brands'
+        /// </summary>
+        [Test]
+        public void BrandsTest()
+        {
+            // TODO unit test for the property 'Brands'
+        }
+        /// <summary>
+        /// Test the property 'Features'
+        /// </summary>
+        [Test]
+        public void FeaturesTest()
+        {
+            // TODO unit test for the property 'Features'
+        }
+        /// <summary>
         /// Test the property 'Invoice'
         /// </summary>
         [Test]
         public void InvoiceTest()
         {
             // TODO unit test for the property 'Invoice'
+        }
+        /// <summary>
+        /// Test the property 'Network'
+        /// </summary>
+        [Test]
+        public void NetworkTest()
+        {
+            // TODO unit test for the property 'Network'
+        }
+        /// <summary>
+        /// Test the property 'IssuerInformation'
+        /// </summary>
+        [Test]
+        public void IssuerInformationTest()
+        {
+            // TODO unit test for the property 'IssuerInformation'
         }
         /// <summary>
         /// Test the property 'Bank'
@@ -111,6 +143,38 @@ namespace CyberSource.Test
         public void AccountFeaturesTest()
         {
             // TODO unit test for the property 'AccountFeatures'
+        }
+        /// <summary>
+        /// Test the property 'PaymentInstrument'
+        /// </summary>
+        [Test]
+        public void PaymentInstrumentTest()
+        {
+            // TODO unit test for the property 'PaymentInstrument'
+        }
+        /// <summary>
+        /// Test the property 'InstrumentIdentifier'
+        /// </summary>
+        [Test]
+        public void InstrumentIdentifierTest()
+        {
+            // TODO unit test for the property 'InstrumentIdentifier'
+        }
+        /// <summary>
+        /// Test the property 'ShippingAddress'
+        /// </summary>
+        [Test]
+        public void ShippingAddressTest()
+        {
+            // TODO unit test for the property 'ShippingAddress'
+        }
+        /// <summary>
+        /// Test the property 'FluidData'
+        /// </summary>
+        [Test]
+        public void FluidDataTest()
+        {
+            // TODO unit test for the property 'FluidData'
         }
 
     }

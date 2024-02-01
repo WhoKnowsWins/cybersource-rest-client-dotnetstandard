@@ -113,12 +113,36 @@ namespace CyberSource.Test
             // TODO unit test for the property 'AuthorizationPayload'
         }
         /// <summary>
+        /// Test the property 'AuthenticationType'
+        /// </summary>
+        [Test]
+        public void AuthenticationTypeTest()
+        {
+            // TODO unit test for the property 'AuthenticationType'
+        }
+        /// <summary>
         /// Test the property 'AuthenticationTransactionId'
         /// </summary>
         [Test]
         public void AuthenticationTransactionIdTest()
         {
             // TODO unit test for the property 'AuthenticationTransactionId'
+        }
+        /// <summary>
+        /// Test the property 'AuthenticationTransactionContextId'
+        /// </summary>
+        [Test]
+        public void AuthenticationTransactionContextIdTest()
+        {
+            // TODO unit test for the property 'AuthenticationTransactionContextId'
+        }
+        /// <summary>
+        /// Test the property 'ValidityPeriod'
+        /// </summary>
+        [Test]
+        public void ValidityPeriodTest()
+        {
+            // TODO unit test for the property 'ValidityPeriod'
         }
         /// <summary>
         /// Test the property 'CardholderMessage'
@@ -351,6 +375,54 @@ namespace CyberSource.Test
         public void DirectoryServerTransactionIdTest()
         {
             // TODO unit test for the property 'DirectoryServerTransactionId'
+        }
+        /// <summary>
+        /// Test the property 'AcsOperatorID'
+        /// </summary>
+        [Test]
+        public void AcsOperatorIDTest()
+        {
+            // TODO unit test for the property 'AcsOperatorID'
+        }
+        /// <summary>
+        /// Test the property 'AcsReferenceNumber'
+        /// </summary>
+        [Test]
+        public void AcsReferenceNumberTest()
+        {
+            // TODO unit test for the property 'AcsReferenceNumber'
+        }
+        /// <summary>
+        /// Test the property 'IdciDecision'
+        /// </summary>
+        [Test]
+        public void IdciDecisionTest()
+        {
+            // TODO unit test for the property 'IdciDecision'
+        }
+        /// <summary>
+        /// Test the property 'IdciReasonCode1'
+        /// </summary>
+        [Test]
+        public void IdciReasonCode1Test()
+        {
+            // TODO unit test for the property 'IdciReasonCode1'
+        }
+        /// <summary>
+        /// Test the property 'IdciReasonCode2'
+        /// </summary>
+        [Test]
+        public void IdciReasonCode2Test()
+        {
+            // TODO unit test for the property 'IdciReasonCode2'
+        }
+        /// <summary>
+        /// Test the property 'IdciScore'
+        /// </summary>
+        [Test]
+        public void IdciScoreTest()
+        {
+            // TODO unit test for the property 'IdciScore'
         }
 
     }

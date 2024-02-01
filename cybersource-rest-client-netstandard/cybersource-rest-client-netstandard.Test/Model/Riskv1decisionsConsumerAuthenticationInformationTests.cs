@@ -129,6 +129,14 @@ namespace CyberSource.Test
             // TODO unit test for the property 'AuthenticationTransactionId'
         }
         /// <summary>
+        /// Test the property 'TransactionFlowIndicator'
+        /// </summary>
+        [Test]
+        public void TransactionFlowIndicatorTest()
+        {
+            // TODO unit test for the property 'TransactionFlowIndicator'
+        }
+        /// <summary>
         /// Test the property 'ChallengeCancelCode'
         /// </summary>
         [Test]
@@ -383,6 +391,14 @@ namespace CyberSource.Test
         public void WhiteListStatusTest()
         {
             // TODO unit test for the property 'WhiteListStatus'
+        }
+        /// <summary>
+        /// Test the property 'ScoreRequest'
+        /// </summary>
+        [Test]
+        public void ScoreRequestTest()
+        {
+            // TODO unit test for the property 'ScoreRequest'
         }
 
     }

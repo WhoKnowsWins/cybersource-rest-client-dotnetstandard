@@ -65,6 +65,14 @@ namespace CyberSource.Test
         }
 
         /// <summary>
+        /// Test the property 'ApprovalCode'
+        /// </summary>
+        [Test]
+        public void ApprovalCodeTest()
+        {
+            // TODO unit test for the property 'ApprovalCode'
+        }
+        /// <summary>
         /// Test the property 'TransactionId'
         /// </summary>
         [Test]
@@ -103,6 +111,22 @@ namespace CyberSource.Test
         public void AchVerificationTest()
         {
             // TODO unit test for the property 'AchVerification'
+        }
+        /// <summary>
+        /// Test the property 'NetworkTransactionId'
+        /// </summary>
+        [Test]
+        public void NetworkTransactionIdTest()
+        {
+            // TODO unit test for the property 'NetworkTransactionId'
+        }
+        /// <summary>
+        /// Test the property 'SettlementDate'
+        /// </summary>
+        [Test]
+        public void SettlementDateTest()
+        {
+            // TODO unit test for the property 'SettlementDate'
         }
 
     }

@@ -69,9 +69,9 @@ namespace CyberSource.Client
             if (merchConfigDictObj != null)
             {
                 if (merchConfigDictObj.ContainsKey("useProxy"))
-				{
-					if (bool.Parse(merchConfigDictObj["useProxy"])) 
-					{
+                {
+                    if (bool.Parse(merchConfigDictObj["useProxy"]))
+                    {
 
                         if (!string.IsNullOrWhiteSpace(merchConfigDictObj["proxyAddress"]) && int.TryParse(merchConfigDictObj["proxyPort"], out int proxyPortTest))
                         {
@@ -148,12 +148,12 @@ namespace CyberSource.Client
         /// <value>Timeout.</value>
         public int Timeout
         {
-            get { return ApiClient.RestClient.Timeout; }
+            get { return ApiClient.RestClient.Options.MaxTimeout; }
 
             set
             {
                 if (ApiClient != null)
-                    ApiClient.RestClient.Timeout = value;
+                    ApiClient.RestClient.Options.MaxTimeout = value;
             }
         }
 
@@ -170,18 +170,27 @@ namespace CyberSource.Client
         /// <returns></returns>
         public void SetApiClientUsingDefault (ApiClient apiClient = null)
         {
+            // if (apiClient == null)
+            // {
+                // if (Default != null && Default.ApiClient == null)
+                    // Default.ApiClient = new ApiClient();
+
+                // ApiClient = Default != null ? Default.ApiClient : new ApiClient();
+            // }
+            // else
+            // {
+                // if (Default != null && Default.ApiClient == null)
+                    // Default.ApiClient = apiClient;
+
+                // ApiClient = apiClient;
+            // }
+            
             if (apiClient == null)
             {
-                if (Default != null && Default.ApiClient == null)
-                    Default.ApiClient = new ApiClient();
-
-                ApiClient = Default != null ? Default.ApiClient : new ApiClient();
+                ApiClient = new ApiClient();
             }
             else
             {
-                if (Default != null && Default.ApiClient == null)
-                    Default.ApiClient = apiClient;
-
                 ApiClient = apiClient;
             }
         }
